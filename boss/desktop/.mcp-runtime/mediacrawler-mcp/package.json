@@ -1,0 +1,17 @@
+{
+  "name": "mediacrawler-mcp",
+  "version": "0.1.0",
+  "description": "Safe stdio MCP server for the local MediaCrawler FastAPI API.",
+  "main": "src/index.js",
+  "bin": {
+    "mediacrawler-mcp": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenMontage AI 短剧工作台</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --om-bg: var(--color-background-primary, #f7f7f8);
+      --om-panel: var(--color-background-secondary, #ffffff);
+      --om-panel-strong: var(--color-background-tertiary, #f0f1f3);
+      --om-text: var(--color-text-primary, #1b1d22);
+      --om-muted: var(--color-text-secondary, #6f747d);
+      --om-border: var(--color-border-primary, #dfe1e5);
+      --om-accent: var(--color-accent-primary, #6d5dfc);
+      --om-accent-soft: color-mix(in srgb, var(--om-accent) 13%, transparent);
+      --om-ok: #20a66a;
+      --om-warn: #c77b16;
+      --om-danger: #d04b4b;
+      --om-radius: 14px;
+      font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: transparent; color: var(--om-text); }
+    body { padding: 14px; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .shell {
+      overflow: hidden;
+      border: 1px solid var(--om-border);
+      border-radius: calc(var(--om-radius) + 2px);
+      background: var(--om-panel);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+    }
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--om-border);
+      background: linear-gradient(135deg, var(--om-accent-soft), transparent 55%);
+    }
+    .eyebrow { color: var(--om-accent); font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 4px 0 5px; font-size: 21px; line-height: 1.2; }
+    .subtitle { color: var(--om-muted); font-size: 13px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .revision { white-space: nowrap; padding: 5px 9px; border-radius: 999px; color: var(--om-muted); background: var(--om-panel-strong); font-size: 12px; }
+    .icon-button, .button {
+      border: 1px solid var(--om-border);
+      border-radius: 9px;
+      color: var(--om-text);
+      background: var(--om-panel);
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .icon-button { width: 34px; height: 34px; font-size: 16px; }
+    .button { padding: 8px 12px; font-weight: 650; font-size: 13px; }
+    .button:hover, .icon-button:hover { border-color: var(--om-accent); transform: translateY(-1px); }
+    .button.primary { color: white; border-color: var(--om-accent); background: var(--om-accent); }
+    .button.danger { color: var(--om-danger); }
+    .button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--om-border);
+      background: var(--om-panel);
+    }
+    .tab {
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 9px;
+      padding: 8px 11px;
+      color: var(--om-muted);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .tab.active { color: var(--om-accent); background: var(--om-accent-soft); }
+    .content { min-height: 220px; padding: 18px 20px 20px; }
+    .loading, .empty { padding: 44px 20px; text-align: center; color: var(--om-muted); }
+    .section { margin-bottom: 20px; }
+    .section:last-child { margin-bottom: 0; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .section-title { margin: 0; font-size: 15px; font-weight: 760; }
+    .section-note { color: var(--om-muted); font-size: 12px; }
+    .grid { display: grid; gap: 10px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid var(--om-border);
+      border-radius: var(--om-radius);
+      background: var(--om-panel);
+    }
+    .card.selectable { position: relative; transition: border-color .12s ease, background .12s ease; }
+    .card.selectable:hover { border-color: color-mix(in srgb, var(--om-accent) 55%, var(--om-border)); }
+    .card.selected { border-color: var(--om-accent); background: var(--om-accent-soft); }
+    .card-title { margin: 0 0 6px; font-size: 14px; font-weight: 740; }
+    .card-meta { color: var(--om-muted); font-size: 12px; line-height: 1.5; }
+    .card-body { font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .check {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 21px;
+      height: 21px;
+      border: 1px solid var(--om-border);
+      border-radius: 7px;
+      color: white;
+      background: var(--om-panel);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .selected .check { border-color: var(--om-accent); background: var(--om-accent); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .pill { padding: 4px 7px; border-radius: 999px; color: var(--om-muted); background: var(--om-panel-strong); font-size: 11px; }
+    .metric { padding: 12px; border-radius: 12px; background: var(--om-panel-strong); }
+    .metric-label { color: var(--om-muted); font-size: 11px; }
+    .metric-value { margin-top: 4px; font-size: 14px; font-weight: 730; overflow-wrap: anywhere; }
+    .stage-rail { display: grid; gap: 7px; }
+    .stage {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 11px;
+      border: 1px solid var(--om-border);
+      border-radius: 11px;
+    }
+    .stage-dot { width: 10px; height: 10px; justify-self: center; border-radius: 50%; background: var(--om-border); }
+    .stage.completed .stage-dot { background: var(--om-ok); }
+    .stage.awaiting_review .stage-dot { background: var(--om-warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--om-warn) 18%, transparent); }
+    .stage.ready .stage-dot, .stage.awaiting_input .stage-dot, .stage.revision_requested .stage-dot { background: var(--om-accent); }
+    .stage-name { font-size: 13px; font-weight: 680; }
+    .stage-status { color: var(--om-muted); font-size: 11px; }
+    .episode { border-left: 3px solid var(--om-accent); }
+    .scene { margin-top: 10px; padding: 11px; border-radius: 10px; background: var(--om-panel-strong); }
+    .dialogue { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; margin-top: 7px; font-size: 12px; }
+    .speaker { color: var(--om-accent); font-weight: 720; }
+    .shot-number { color: var(--om-accent); font-size: 11px; font-weight: 780; letter-spacing: .04em; }
+    .prompt { margin-top: 9px; padding: 9px; border-radius: 9px; color: var(--om-muted); background: var(--om-panel-strong); font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; line-height: 1.55; }
+    .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .approval {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 14px 20px;
+      border-top: 1px solid var(--om-border);
+      background: color-mix(in srgb, var(--om-warn) 8%, var(--om-panel));
+    }
+    .approval.hidden { display: none; }
+    .approval-label { margin-bottom: 7px; font-size: 13px; font-weight: 720; }
+    textarea {
+      width: 100%;
+      min-height: 62px;
+      resize: vertical;
+      padding: 9px 10px;
+      border: 1px solid var(--om-border);
+      border-radius: 9px;
+      color: var(--om-text);
+      background: var(--om-panel);
+      outline: none;
+    }
+    textarea:focus { border-color: var(--om-accent); }
+    .approval-actions { display: flex; gap: 8px; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 10;
+      max-width: min(520px, calc(100vw - 28px));
+      transform: translate(-50%, 18px);
+      padding: 9px 12px;
+      border: 1px solid var(--om-border);
+      border-radius: 10px;
+      opacity: 0;
+      pointer-events: none;
+      color: var(--om-text);
+      background: var(--om-panel);
+      box-shadow: 0 8px 26px rgba(0, 0, 0, .14);
+      font-size: 12px;
+      transition: opacity .16s ease, transform .16s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.error { color: var(--om-danger); border-color: color-mix(in srgb, var(--om-danger) 55%, var(--om-border)); }
+    @media (max-width: 720px) {
+      body { padding: 8px; }
+      .header, .content, .approval { padding-left: 13px; padding-right: 13px; }
+      .header { flex-direction: column; }
+      .header-actions { width: 100%; justify-content: flex-end; }
+      .grid.two, .grid.three { grid-template-columns: 1fr; }
+      .approval { grid-template-columns: 1fr; }
+      .approval-actions { justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <div class="eyebrow">OpenMontage · AI 短剧制作</div>
+        <h1 id="projectTitle">AI 短剧工作台</h1>
+        <div class="subtitle" id="projectSubtitle">等待项目数据…</div>
+      </div>
+      <div class="header-actions">
+        <span class="revision" id="revisionLabel">版本 —</span>
+        <button class="icon-button" id="refreshButton" title="刷新">↻</button>
+      </div>
+    </header>
+    <nav class="tabs" id="tabs"></nav>
+    <section class="content" id="content"><div class="loading">正在连接短剧项目…</div></section>
+    <section class="approval hidden" id="approvalPanel">
+      <div>
+        <div class="approval-label" id="approvalLabel">阶段审批</div>
+        <textarea id="approvalNote" placeholder="批准可留空；如需修改，请写清具体意见。"></textarea>
+      </div>
+      <div class="approval-actions">
+        <button class="button danger" id="reviseButton">要求修改</button>
+        <button class="button primary" id="approveButton">批准并继续</button>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var TAB_ITEMS = [
+      ["overview", "总览"],
+      ["bible", "故事设定"],
+      ["cast", "角色"],
+      ["screenplay", "剧本"],
+      ["storyboard", "分镜"],
+      ["assets", "资产"],
+      ["voice", "配音"],
+      ["render", "成片"],
+    ];
+    var STAGE_VIEW = {
+      research: "overview", proposal: "bible", script: "screenplay", scene_plan: "storyboard",
+      assets: "assets", edit: "voice", compose: "render", publish: "render"
+    };
+    var STATUS_LABEL = {
+      blocked: "未开始", awaiting_input: "等待输入", ready: "可执行", awaiting_review: "等待确认",
+      completed: "已完成", revision_requested: "待修改", in_progress: "进行中"
+    };
+
+    var pending = new Map();
+    var requestId = 0;
+    var payload = null;
+    var project = null;
+    var activeView = "overview";
+    var selected = new Set();
+    var selectedScope = "";
+    var busy = false;
+    var toastTimer = null;
+
+    var content = document.getElementById("content");
+    var tabs = document.getElementById("tabs");
+    var approvalPanel = document.getElementById("approvalPanel");
+    var approvalNote = document.getElementById("approvalNote");
+
+    function request(method, params) {
+      return new Promise(function (resolve, reject) {
+        var id = ++requestId;
+        pending.set(id, { resolve: resolve, reject: reject });
+        window.parent.postMessage({ jsonrpc: "2.0", id: id, method: method, params: params || {} }, "*");
+        setTimeout(function () {
+          if (!pending.has(id)) return;
+          pending.delete(id);
+          reject(new Error("请求超时"));
+        }, 30000);
+      });
+    }
+
+    function notify(method, params) {
+      window.parent.postMessage({ jsonrpc: "2.0", method: method, params: params || {} }, "*");
+    }
+
+    function callTool(name, args) {
+      return request("tools/call", { name: name, arguments: args || {} });
+    }
+
+    function sendChat(text) {
+      return request("ui/message", { content: [{ type: "text", text: text }] }).catch(function () {});
+    }
+
+    function reportSize() {
+      var mode = document.documentElement.getAttribute("data-display-mode");
+      if (mode === "fullscreen" || mode === "pip") return;
+      notify("ui/notifications/size-changed", {
+        width: document.body.scrollWidth,
+        height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+      });
+    }
+
+    function applyHostContext(context) {
+      if (!context) return;
+      if (context.theme) document.documentElement.style.colorScheme = context.theme;
+      if (context.displayMode) document.documentElement.setAttribute("data-display-mode", context.displayMode);
+      var variables = context.styles && context.styles.variables;
+      if (variables) {
+        Object.keys(variables).forEach(function (key) {
+          if (variables[key]) document.documentElement.style.setProperty(key, variables[key]);
+        });
+      }
+    }
+
+    function handleMessage(event) {
+      var message = event.data;
+      if (!message || message.jsonrpc !== "2.0") return;
+      if (Object.prototype.hasOwnProperty.call(message, "id") && pending.has(message.id)) {
+        var waiter = pending.get(message.id);
+        pending.delete(message.id);
+        if (message.error) waiter.reject(new Error(message.error.message || "请求失败"));
+        else waiter.resolve(message.result);
+        return;
+      }
+      if (message.method === "ui/notifications/host-context-changed") {
+        applyHostContext(message.params);
+        return;
+      }
+      if (message.method === "ui/resource-teardown" && Object.prototype.hasOwnProperty.call(message, "id")) {
+        window.parent.postMessage({ jsonrpc: "2.0", id: message.id, result: {} }, "*");
+        return;
+      }
+      if (message.method === "ui/notifications/tool-result" || message.method === "ui/notifications/tool-input") {
+        var data = message.params && message.params.structuredContent;
+        if (data && data.project) setPayload(data);
+      }
+    }
+
+    function unwrapToolResult(result) {
+      if (!result) return null;
+      if (result.structuredContent) return result.structuredContent;
+      if (result.result && result.result.structuredContent) return result.result.structuredContent;
+      return result;
+    }
+
+    function setPayload(next) {
+      if (!next || !next.project) return;
+      payload = next;
+      project = next.project;
+      activeView = next.view || activeView || "overview";
+      selected.clear();
+      selectedScope = "";
+      render();
+    }
+
+    function h(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined && text !== null) node.textContent = String(text);
+      return node;
+    }
+
+    function append(parent) {
+      for (var i = 1; i < arguments.length; i++) {
+        if (arguments[i]) parent.appendChild(arguments[i]);
+      }
+      return parent;
+    }
+
+    function value(value, fallback) {
+      if (value === undefined || value === null || value === "") return fallback || "—";
+      if (Array.isArray(value)) return value.join("、") || (fallback || "—");
+      if (typeof value === "object") return JSON.stringify(value, null, 2);
+      return String(value);
+    }
+
+    function showToast(message, error) {
+      var toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = "toast show" + (error ? " error" : "");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toast.className = "toast"; }, 2600);
+    }
+
+    function setBusy(next) {
+      busy = next;
+      document.querySelectorAll("button").forEach(function (button) { button.disabled = next; });
+    }
+
+    function render() {
+      if (!project) return;
+      document.getElementById("projectTitle").textContent = project.title || "AI 短剧工作台";
+      var settings = project.settings || {};
+      document.getElementById("projectSubtitle").textContent = [
+        project.projectId,
+        settings.episodeCount ? settings.episodeCount + " 集" : "",
+        settings.episodeDurationSeconds ? "每集约 " + settings.episodeDurationSeconds + " 秒" : "",
+        settings.aspectRatio || ""
+      ].filter(Boolean).join(" · ");
+      document.getElementById("revisionLabel").textContent = "版本 " + (project.revision || "—");
+      renderTabs();
+      renderView();
+      renderApproval();
+      setTimeout(reportSize, 0);
+    }
+
+    function renderTabs() {
+      tabs.textContent = "";
+      TAB_ITEMS.forEach(function (item) {
+        var button = h("button", "tab" + (activeView === item[0] ? " active" : ""), item[1]);
+        button.type = "button";
+        button.addEventListener("click", function () {
+          activeView = item[0];
+          selected.clear();
+          selectedScope = "";
+          render();
+        });
+        tabs.appendChild(button);
+      });
+    }
+
+    function renderView() {
+      content.textContent = "";
+      if (activeView === "overview") renderOverview();
+      else if (activeView === "bible") renderBible();
+      else if (activeView === "cast") renderCast();
+      else if (activeView === "screenplay") renderScreenplay();
+      else if (activeView === "storyboard") renderStoryboard();
+      else if (activeView === "assets") renderAssets();
+      else if (activeView === "voice") renderVoice();
+      else renderRender();
+    }
+
+    function section(title, note) {
+      var box = h("div", "section");
+      var head = h("div", "section-head");
+      append(head, h("h2", "section-title", title), note ? h("div", "section-note", note) : null);
+      box.appendChild(head);
+      content.appendChild(box);
+      return box;
+    }
+
+    function metric(label, text) {
+      var node = h("div", "metric");
+      append(node, h("div", "metric-label", label), h("div", "metric-value", text));
+      return node;
+    }
+
+    function renderOverview() {
+      var settings = project.settings || {};
+      var settingsSection = section("项目设置", "这些值由项目状态管理，不依赖聊天上下文");
+      var metrics = h("div", "grid three");
+      append(metrics,
+        metric("类型 / 受众", [settings.genre, settings.targetAudience].filter(Boolean).join(" · ") || "待补充"),
+        metric("篇幅", value(settings.episodeCount, 1) + " 集 × " + value(settings.episodeDurationSeconds, 90) + " 秒"),
+        metric("画幅 / 语言", value(settings.aspectRatio, "9:16") + " · " + value(settings.language, "zh-CN")),
+        metric("改编模式", value(settings.adaptationMode, "faithful")),
+        metric("视觉风格", value(settings.visualStyle, "待 AI 与用户共同确定")),
+        metric("当前阶段", value((project.stages || {})[project.currentStage] && (project.stages || {})[project.currentStage].label, project.currentStage))
+      );
+      settingsSection.appendChild(metrics);
+
+      var railSection = section("制作流程", "橙色表示等待用户确认");
+      var rail = h("div", "stage-rail");
+      Object.keys(project.stages || {}).forEach(function (key) {
+        var stage = project.stages[key] || {};
+        var row = h("div", "stage " + (stage.status || "blocked"));
+        append(row,
+          h("span", "stage-dot"),
+          h("span", "stage-name", stage.label || key),
+          h("span", "stage-status", STATUS_LABEL[stage.status] || stage.status || "未开始")
+        );
+        row.addEventListener("click", function () {
+          activeView = STAGE_VIEW[key] || "overview";
+          render();
+        });
+        rail.appendChild(row);
+      });
+      railSection.appendChild(rail);
+
+      var source = artifact("source_document");
+      if (source) {
+        var sourceSection = section("原作", value(source.title));
+        var sourceCard = h("div", "card");
+        append(sourceCard,
+          h("div", "card-meta", value(source.source_type) + " · " + value(source.language)),
+          h("div", "card-body", truncate(source.content, 900))
+        );
+        sourceSection.appendChild(sourceCard);
+      }
+    }
+
+    function renderBible() {
+      var bible = artifact("drama_bible");
+      var plan = artifact("episode_plan");
+      if (!bible && !plan) return renderEmpty("AI 尚未生成短剧圣经。让 AI 执行 proposal 阶段后再回来确认。");
+      if (bible) {
+        var hero = section("故事核心", value(bible.logline));
+        var world = bible.world || {};
+        var card = h("div", "card");
+        append(card,
+          h("div", "card-title", value(world.premise, bible.title)),
+          h("div", "card-body", [value(world.time_period), value(world.tone), value(world.rules)].filter(function (x) { return x !== "—"; }).join("\n"))
+        );
+        hero.appendChild(card);
+      }
+      if (plan && Array.isArray(plan.episodes)) {
+        var episodesSection = section("分集结构", plan.episodes.length + " 集");
+        var list = h("div", "grid two");
+        plan.episodes.forEach(function (episode) {
+          var episodeCard = h("div", "card episode");
+          append(episodeCard,
+            h("div", "card-title", "第 " + value(episode.number) + " 集 · " + value(episode.title)),
+            h("div", "card-body", value(episode.logline)),
+            h("div", "pill-row")
+          );
+          var pills = episodeCard.lastChild;
+          append(pills, h("span", "pill", "钩子：" + value(episode.hook)), h("span", "pill", "结尾：" + value(episode.cliffhanger)));
+          list.appendChild(episodeCard);
+        });
+        episodesSection.appendChild(list);
+      }
+    }
+
+    function renderCast() {
+      var bible = artifact("drama_bible");
+      var characters = bible && Array.isArray(bible.characters) ? bible.characters : [];
+      if (!characters.length) return renderEmpty("短剧圣经中还没有角色设定。");
+      beginSelection("characters");
+      var castSection = section("角色设定", "选择需要进入资产生成或需要重点保留的角色");
+      var grid = h("div", "grid two");
+      characters.forEach(function (character) {
+        var id = value(character.id);
+        var card = selectableCard(id);
+        append(card,
+          h("div", "check", selected.has(id) ? "✓" : ""),
+          h("div", "card-title", value(character.name) + " · " + value(character.role)),
+          h("div", "card-body", value(character.description)),
+          h("div", "card-meta", "外形：" + value(character.appearance)),
+          h("div", "pill-row")
+        );
+        var pills = card.lastChild;
+        (character.personality || []).forEach(function (item) { pills.appendChild(h("span", "pill", item)); });
+        grid.appendChild(card);
+      });
+      castSection.appendChild(grid);
+      castSection.appendChild(selectionToolbar("保存角色选择"));
+    }
+
+    function renderScreenplay() {
+      var screenplay = artifact("screenplay");
+      if (!screenplay || !Array.isArray(screenplay.episodes)) return renderEmpty("AI 尚未生成分集剧本。");
+      screenplay.episodes.forEach(function (episode) {
+        var episodeSection = section("第 " + value(episode.number) + " 集 · " + value(episode.title), value(episode.duration_seconds) + " 秒");
+        var episodeCard = h("div", "card episode");
+        append(episodeCard, h("div", "card-meta", "开场钩子：" + value(episode.hook)));
+        (episode.scenes || []).forEach(function (scene) {
+          var sceneNode = h("div", "scene");
+          append(sceneNode,
+            h("div", "card-title", value(scene.order) + ". " + value(scene.slugline)),
+            h("div", "card-body", value(scene.summary)),
+            h("div", "card-meta", value(scene.duration_seconds) + " 秒 · " + value(scene.characters))
+          );
+          (scene.action || []).forEach(function (action) { sceneNode.appendChild(h("div", "card-body", "动作：" + action)); });
+          (scene.dialogue || []).forEach(function (line) {
+            var dialogue = h("div", "dialogue");
+            append(dialogue, h("span", "speaker", value(line.character_id)), h("span", "", value(line.text)));
+            sceneNode.appendChild(dialogue);
+          });
+          episodeCard.appendChild(sceneNode);
+        });
+        episodeCard.appendChild(h("div", "card-meta", "结尾悬念：" + value(episode.cliffhanger)));
+        episodeSection.appendChild(episodeCard);
+      });
+    }
+
+    function renderStoryboard() {
+      var storyboard = artifact("drama_storyboard");
+      var shots = storyboard && Array.isArray(storyboard.shots) ? storyboard.shots : [];
+      if (!shots.length) return renderEmpty("AI 尚未生成导演分镜。");
+      beginSelection("storyboard_shots");
+      var boardSection = section("导演分镜", shots.length + " 个镜头，可选择需要优先生成或重做的镜头");
+      var grid = h("div", "grid two");
+      shots.forEach(function (shot) {
+        var id = value(shot.id);
+        var card = selectableCard(id);
+        append(card,
+          h("div", "check", selected.has(id) ? "✓" : ""),
+          h("div", "shot-number", "镜头 " + value(shot.order) + " · " + value(shot.duration_seconds) + " 秒"),
+          h("div", "card-title", value(shot.shot_size) + " · " + value(shot.camera)),
+          h("div", "card-body", value(shot.action)),
+          h("div", "card-meta", value(shot.composition) + "\n情绪：" + value(shot.emotion)),
+          h("div", "prompt", value(shot.prompt))
+        );
+        grid.appendChild(card);
+      });
+      boardSection.appendChild(grid);
+      boardSection.appendChild(selectionToolbar("保存分镜选择"));
+    }
+
+    function renderAssets() {
+      var manifest = artifact("generation_manifest");
+      var items = manifest && Array.isArray(manifest.items) ? manifest.items : [];
+      if (!items.length) return renderEmpty("资产生成清单尚未建立。AI 会先依据角色和分镜生成候选，再由你选择。");
+      beginSelection("assets");
+      var assetsSection = section("资产候选", items.length + " 项");
+      var grid = h("div", "grid three");
+      items.forEach(function (item) {
+        var id = value(item.id);
+        var card = selectableCard(id);
+        append(card,
+          h("div", "check", selected.has(id) ? "✓" : ""),
+          h("div", "card-title", value(item.asset_type) + " · " + value(item.subject_id)),
+          h("div", "card-meta", value(item.status) + " · " + value(item.provider, "待选择模型")),
+          h("div", "prompt", truncate(item.prompt, 320)),
+          item.output_path ? h("div", "card-meta", "文件：" + item.output_path) : null
+        );
+        grid.appendChild(card);
+      });
+      assetsSection.appendChild(grid);
+      assetsSection.appendChild(selectionToolbar("保存资产选择"));
+    }
+
+    function renderVoice() {
+      var plan = artifact("voice_plan");
+      if (!plan || !Array.isArray(plan.voices)) return renderEmpty("配音方案尚未建立。角色确认后，AI 会生成音色与表演方向供你选择。");
+      beginSelection("voices");
+      var voiceSection = section("角色配音", value(plan.language));
+      var grid = h("div", "grid two");
+      plan.voices.forEach(function (voice) {
+        var id = value(voice.character_id) + ":" + value(voice.voice_id);
+        var card = selectableCard(id);
+        append(card,
+          h("div", "check", selected.has(id) ? "✓" : ""),
+          h("div", "card-title", value(voice.character_id) + " · " + value(voice.voice_id)),
+          h("div", "card-body", value(voice.performance_direction)),
+          h("div", "card-meta", value(voice.provider, "默认供应商") + " · 语速 " + value(voice.speed, 1))
+        );
+        grid.appendChild(card);
+      });
+      voiceSection.appendChild(grid);
+      voiceSection.appendChild(selectionToolbar("保存配音选择"));
+    }
+
+    function renderRender() {
+      var report = artifact("render_report");
+      var review = artifact("final_review");
+      var publish = artifact("publish_log");
+      if (!report && !review && !publish) return renderEmpty("尚未进入成片合成阶段。");
+      if (report) renderObjectSection("渲染报告", report);
+      if (review) renderObjectSection("最终质检", review);
+      if (publish) renderObjectSection("交付记录", publish);
+      var approvals = project.approvals || [];
+      if (approvals.length) {
+        var approvalHistory = section("审批记录", approvals.length + " 条");
+        var list = h("div", "grid two");
+        approvals.slice().reverse().forEach(function (entry) {
+          var card = h("div", "card");
+          append(card,
+            h("div", "card-title", value(entry.stage) + " · " + value(entry.decision)),
+            h("div", "card-body", value(entry.note, "无备注")),
+            h("div", "card-meta", value(entry.timestamp))
+          );
+          list.appendChild(card);
+        });
+        approvalHistory.appendChild(list);
+      }
+    }
+
+    function renderObjectSection(title, object) {
+      var box = section(title);
+      var card = h("div", "card");
+      card.appendChild(h("div", "card-body", JSON.stringify(object, null, 2)));
+      box.appendChild(card);
+    }
+
+    function renderEmpty(message) {
+      content.appendChild(h("div", "empty", message));
+    }
+
+    function artifact(name) {
+      return project && project.artifactData ? project.artifactData[name] : null;
+    }
+
+    function truncate(text, max) {
+      var raw = value(text, "");
+      return raw.length > max ? raw.slice(0, max) + "…" : raw;
+    }
+
+    function beginSelection(scope) {
+      if (selectedScope === scope) return;
+      selectedScope = scope;
+      selected.clear();
+      var existing = project.selections && project.selections[scope];
+      (existing && existing.selectedIds || []).forEach(function (id) { selected.add(id); });
+    }
+
+    function selectableCard(id) {
+      var card = h("div", "card selectable" + (selected.has(id) ? " selected" : ""));
+      card.tabIndex = 0;
+      function toggle() {
+        if (selected.has(id)) selected.delete(id); else selected.add(id);
+        render();
+      }
+      card.addEventListener("click", toggle);
+      card.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); }
+      });
+      return card;
+    }
+
+    function selectionToolbar(label) {
+      var toolbar = h("div", "toolbar");
+      var count = h("span", "section-note", "已选择 " + selected.size + " 项");
+      var button = h("button", "button primary", label);
+      button.type = "button";
+      button.addEventListener("click", function (event) {
+        event.stopPropagation();
+        saveSelection();
+      });
+      append(toolbar, count, button);
+      return toolbar;
+    }
+
+    async function saveSelection() {
+      if (!project || !selectedScope) return;
+      setBusy(true);
+      try {
+        var result = await callTool("drama_selection_commit", {
+          projectId: project.projectId,
+          expectedRevision: project.revision,
+          scope: selectedScope,
+          selectedIds: Array.from(selected),
+          settings: { view: activeView }
+        });
+        var data = unwrapToolResult(result);
+        if (!data || data.ok === false) throw new Error(data && data.error && data.error.message || "保存失败");
+        setPayload(data);
+        showToast(data.message || "选择已保存");
+        sendChat("我已在 AI 短剧工作台保存 " + selectedScope + " 选择，共 " + selected.size + " 项。请基于最新项目 revision 继续。\n");
+      } catch (error) {
+        showToast(error.message || String(error), true);
+        await refresh();
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function renderApproval() {
+      var stage = project.stages && project.stages[project.currentStage];
+      var waiting = stage && stage.status === "awaiting_review";
+      approvalPanel.className = "approval" + (waiting ? "" : " hidden");
+      if (!waiting) return;
+      document.getElementById("approvalLabel").textContent = (stage.label || project.currentStage) + "等待你的确认";
+      approvalNote.value = "";
+    }
+
+    async function decide(decision) {
+      if (!project) return;
+      var stage = project.currentStage;
+      var note = approvalNote.value.trim();
+      if (decision === "revise" && !note) {
+        showToast("请先写明修改意见", true);
+        approvalNote.focus();
+        return;
+      }
+      setBusy(true);
+      try {
+        var result = await callTool("drama_stage_decide", {
+          projectId: project.projectId,
+          expectedRevision: project.revision,
+          stage: stage,
+          decision: decision,
+          note: note
+        });
+        var data = unwrapToolResult(result);
+        if (!data || data.ok === false) throw new Error(data && data.error && data.error.message || "审批失败");
+        setPayload(data);
+        showToast(data.message || "审批已保存");
+        var message = decision === "approve"
+          ? "我已在 AI 短剧工作台批准 " + stage + " 阶段。请读取下一阶段 Skill 和最新项目 revision 后继续。"
+          : "我已要求修改 " + stage + " 阶段，意见：" + note + "。请按意见修订制品并重新打开工作台。";
+        sendChat(message);
+      } catch (error) {
+        showToast(error.message || String(error), true);
+        await refresh();
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function refresh() {
+      if (!project || busy) return;
+      setBusy(true);
+      try {
+        var result = await callTool("drama_ui_refresh", { projectId: project.projectId });
+        var data = unwrapToolResult(result);
+        if (!data || data.ok === false) throw new Error(data && data.error && data.error.message || "刷新失败");
+        data.view = activeView;
+        setPayload(data);
+        showToast("已刷新到 rev " + project.revision);
+      } catch (error) {
+        showToast(error.message || String(error), true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    document.getElementById("refreshButton").addEventListener("click", refresh);
+    document.getElementById("approveButton").addEventListener("click", function () { decide("approve"); });
+    document.getElementById("reviseButton").addEventListener("click", function () { decide("revise"); });
+    window.addEventListener("message", handleMessage);
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(reportSize).observe(document.body);
+    window.addEventListener("resize", reportSize);
+
+    request("ui/initialize", {
+      protocolVersion: "2026-01-26",
+      appInfo: { name: "openmontage-short-drama", version: "0.3.1" },
+      appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] }
+    }).then(function (result) {
+      applyHostContext(result && (result.hostContext || result));
+      notify("ui/notifications/initialized", {});
+      reportSize();
+    }).catch(function (error) {
+      showToast("工作台初始化失败：" + error.message, true);
+      reportSize();
+    });
+  })();
+  </script>
+</body>
+</html>

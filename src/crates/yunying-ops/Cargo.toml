@@ -1,0 +1,44 @@
+[package]
+name = "yunying-ops"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "商媒运营助手 · 运营智能体统一 MCP/操作面（替代 mcps/operations-mcp），聚合采集/发布/创作/客服工具。"
+
+[lib]
+name = "yunying_ops"
+path = "src/lib.rs"
+
+[[bin]]
+name = "yunying-ops-mcp"
+path = "src/bin/mcp_server.rs"
+required-features = ["mcp"]
+
+[features]
+default = []
+# MCP server（rmcp）：启用后 yunying-ops 可作为 Goose 的 stdio MCP 扩展，模型自主调 operations 工具。
+mcp = ["rmcp", "schemars", "reqwest"]
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "fs", "time", "io-std", "io-util"] }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+mediacrawler = { workspace = true }
+socialconnect = { workspace = true }
+yunying-config = { workspace = true }
+rmcp = { workspace = true, features = ["server", "transport-io", "macros"], optional = true }
+# rmcp 1.8 的 #[tool] 宏依赖 schemars 1.0（与 workspace 一致）。
+schemars = { workspace = true, optional = true }
+# MCP bin 真实执行（crawler/image gen HTTPS）用。
+reqwest = { workspace = true, features = ["json", "rustls"], optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "test-util"] }
+tempfile = { workspace = true }

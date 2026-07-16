@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "platform": "windows",
+  "architecture": "x86_64-pc-windows-msvc",
+  "offlineReady": false,
+  "note": "Placeholder only. scripts/prepare-windows-runtime.mjs replaces this file during a Windows release build."
+}

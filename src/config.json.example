@@ -1,0 +1,64 @@
+{
+  "goose": {
+    "provider": "openai",
+    "model": "gpt-5.5",
+    "operations_agent_model": "gpt-5.5",
+    "base_url": "https://llmapi.agentsworkforyou.com",
+    "api_key": "",
+    "mode": "auto",
+    "chat_timeout_ms": 180000,
+    "media_chat_timeout_ms": 1800000,
+    "history_message_limit": 40
+  },
+  "mediacrawler": {
+    "api_timeout_ms": 30000,
+    "default_login_type": "qrcode",
+    "save_option": "json",
+    "max_notes_count": 50,
+    "max_comments_count": 20,
+    "xhs_cookies": "",
+    "douyin_cookies": "",
+    "bili_cookies": ""
+  },
+  "social": {
+    "sau_bin": "",
+    "accounts": {},
+    "headless": true,
+    "yt_proxy": ""
+  },
+  "openmontage": {
+    "vision_analyzer_provider": "openai",
+    "vision_analyzer_model": "gpt-5.5",
+    "mcp_timeout_ms": 1800000
+  },
+  "image": {
+    "provider": "openai-compatible",
+    "endpoint": "",
+    "api_key": "",
+    "model": "gpt-image-2",
+    "size": "1024x1536",
+    "quality": "high",
+    "aspect_ratio": "3:4"
+  },
+  "video": {
+    "endpoint": "https://ark.cn-beijing.volces.com/api/plan/v3",
+    "api_key": "",
+    "model": "doubao-seedance-1.5-pro",
+    "aspect_ratio": "9:16",
+    "resolution": "720p",
+    "duration_seconds": 8
+  },
+  "safety": {
+    "real_confirm": "",
+    "run_real_crawler": false,
+    "run_crawler_readback": false,
+    "run_real_publish": false,
+    "run_real_image": false,
+    "run_real_video": false
+  },
+  "server": {
+    "bridge_url": "http://127.0.0.1",
+    "bridge_port": 0
+  },
+  "asset_root": "media/generated"
+}

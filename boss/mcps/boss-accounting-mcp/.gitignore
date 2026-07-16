@@ -1,0 +1,6 @@
+data/
+__pycache__/
+*.pyc
+.env
+boss-accounting.config.json
+actual.config.json

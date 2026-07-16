@@ -1,0 +1,24 @@
+[package]
+name = "yunying-desktop"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.91.1"
+description = "商媒运营助手桌面应用 Tauri 壳（嵌入 yunying-server，暴露 3 IPC 原语给 Cohmira 渲染层）"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset", "devtools"] }
+serde = "1"
+serde_json = "1"
+tokio = "1"
+anyhow = "1"
+rfd = "0.15"
+yunying-server = { path = "../crates/yunying-server" }
+yunying-config = { path = "../crates/yunying-config" }
+socialconnect = { path = "../crates/socialconnect" }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

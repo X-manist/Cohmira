@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">商媒运营助手 · 老板端 Cohmira Command</title>
+  <desc id="desc">商媒运营助手 · 老板指挥台的子品牌 Logo。</desc>
+  <defs>
+    <linearGradient id="cohmira-gradient" x1="34" y1="166" x2="166" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#27D3B8"/>
+      <stop offset="0.52" stop-color="#528EEB"/>
+      <stop offset="1" stop-color="#886CF4"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(30 30)">
+    <rect width="220" height="220" rx="58" fill="#0B1224"/>
+    <path d="M156 64C143 48 123 40 101 40C64 40 39 70 39 110C39 150 64 180 101 180C123 180 143 172 156 156" stroke="url(#cohmira-gradient)" stroke-width="19" stroke-linecap="round"/>
+    <circle cx="156" cy="64" r="9" fill="#886CF4"/>
+    <circle cx="39" cy="110" r="9" fill="#27D3B8"/>
+    <circle cx="156" cy="156" r="9" fill="#5A82F1"/>
+    <path d="M119 88C122 98 127 103 137 106C127 109 122 114 119 124C116 114 111 109 101 106C111 103 116 98 119 88Z" fill="#F8FAFC"/>
+  </g>
+
+  <text x="292" y="126" fill="#101828" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="-2.5">Cohmira</text>
+  <rect x="666" y="68" width="226" height="70" rx="35" fill="#F0EEFF"/>
+  <text x="708" y="113" fill="#5747D6" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="2.6">COMMAND</text>
+  <text x="298" y="194" fill="#475467" font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="38" font-weight="600" letter-spacing="5">商媒运营助手 · 老板指挥台</text>
+</svg>

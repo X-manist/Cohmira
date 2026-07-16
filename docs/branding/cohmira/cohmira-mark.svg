@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">商媒运营助手 Cohmira 品牌图标</title>
+  <desc id="desc">字母 C 的协同轨迹连接三个 Agent 节点，并环绕代表共同目标与增长的星芒。</desc>
+  <defs>
+    <linearGradient id="cohmira-gradient" x1="80" y1="370" x2="374" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#27D3B8"/>
+      <stop offset="0.52" stop-color="#528EEB"/>
+      <stop offset="1" stop-color="#886CF4"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="32" y="32" width="448" height="448" rx="116" fill="#0B1224"/>
+
+  <path
+    d="M356 148C326 111 280 92 230 92C145 92 88 160 88 256C88 352 145 420 230 420C280 420 326 401 356 364"
+    stroke="url(#cohmira-gradient)"
+    stroke-width="42"
+    stroke-linecap="round"
+  />
+
+  <circle cx="356" cy="148" r="20" fill="#886CF4"/>
+  <circle cx="88" cy="256" r="20" fill="#27D3B8"/>
+  <circle cx="356" cy="364" r="20" fill="#5A82F1"/>
+
+  <path
+    d="M270 210C276 234 290 248 314 254C290 260 276 274 270 298C264 274 250 260 226 254C250 248 264 234 270 210Z"
+    fill="#F8FAFC"
+  />
+</svg>

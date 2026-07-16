@@ -1,0 +1,65 @@
+name: Boss Desktop Cross-Platform Check
+
+on:
+  pull_request:
+    paths:
+      - "desktop/**"
+      - ".github/workflows/boss-desktop-check.yml"
+  workflow_dispatch:
+
+jobs:
+  desktop-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            bundle: app
+            artifact_name: boss-desktop-macos
+            artifact_path: desktop/src-tauri/target/release/bundle/macos/*.app
+          - os: windows-2022
+            bundle: nsis
+            artifact_name: boss-desktop-windows
+            artifact_path: desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> desktop/src-tauri/target
+
+      - name: Install frontend dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: desktop
+        run: npm run build
+
+      - name: Test Rust core
+        working-directory: desktop/src-tauri
+        run: cargo test --all-targets
+
+      - name: Build unsigned Tauri desktop package
+        working-directory: desktop
+        run: npm run tauri:build -- --bundles ${{ matrix.bundle }} --ci
+
+      - name: Upload unsigned desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error

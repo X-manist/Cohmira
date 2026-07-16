@@ -1,0 +1,216 @@
+name: ai-short-drama
+version: "1.0"
+description: Agent-first pipeline for source adaptation, episodic screenplay, persistent characters, director storyboards, asset generation, editing, and delivery.
+category: custom
+stability: beta
+default_checkpoint_policy: guided
+required_skills:
+  - pipelines/ai-short-drama/executive-producer
+  - references/ai-short-drama/artifact-contracts
+  - references/ai-short-drama/continuity
+orchestration:
+  mode: agent_serial
+  skill: pipelines/ai-short-drama/executive-producer
+  budget_default_usd: 5.0
+  max_revisions_per_stage: 3
+  max_send_backs: 2
+  max_wall_time_minutes: 720
+extensions:
+  custom_scripts: true
+  custom_playbooks: true
+  custom_skills: true
+  custom_tools: false
+metadata:
+  workspace_resource: ui://openmontage/short-drama
+  state_contract: optimistic_revision
+  text_intelligence: host_agent_skills
+  generation_runtime: jiuban-app-bridge
+stages:
+  - name: research
+    skill: pipelines/ai-short-drama/research-director
+    produces:
+      - source_document
+      - research_brief
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+    checkpoint_required: true
+    human_approval_default: false
+    review_focus:
+      - Source facts, relationships, chronology, and adaptation constraints are explicit
+      - Uncertain source claims are marked rather than invented
+    success_criteria:
+      - A schema-valid source_document exists
+      - The adaptation objective and non-negotiable source anchors are clear
+  - name: proposal
+    skill: pipelines/ai-short-drama/proposal-director
+    required_artifacts_in:
+      - source_document
+    optional_artifacts_in:
+      - research_brief
+    produces:
+      - episode_plan
+      - drama_bible
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - drama_open_review
+    checkpoint_required: true
+    human_approval_default: true
+    review_focus:
+      - Character identity, world rules, episode hooks, and visual language remain mutually consistent
+      - Episode count and duration match project settings
+    success_criteria:
+      - Schema-valid episode_plan and drama_bible artifacts exist
+      - User approves story direction and core cast in the MCP App
+  - name: script
+    skill: pipelines/ai-short-drama/script-director
+    required_artifacts_in:
+      - source_document
+      - episode_plan
+      - drama_bible
+    produces:
+      - screenplay
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - drama_open_review
+    checkpoint_required: true
+    human_approval_default: true
+    review_focus:
+      - Every episode opens with a hook, advances conflict, and ends with a payoff or cliffhanger
+      - Dialogue is speakable within the declared duration
+      - Source adaptations remain traceable
+    success_criteria:
+      - A schema-valid screenplay exists
+      - User approves the screenplay or supplies revision notes
+  - name: scene_plan
+    skill: pipelines/ai-short-drama/scene-director
+    required_artifacts_in:
+      - drama_bible
+      - screenplay
+    produces:
+      - drama_storyboard
+      - continuity_report
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - drama_open_review
+    checkpoint_required: true
+    human_approval_default: true
+    review_focus:
+      - Every shot has executable framing, action, duration, and continuity anchors
+      - Screen direction, wardrobe, locations, and props do not drift
+    success_criteria:
+      - Schema-valid drama_storyboard and continuity_report artifacts exist
+      - Blocking continuity issues are resolved before generation
+  - name: assets
+    skill: pipelines/ai-short-drama/asset-director
+    required_artifacts_in:
+      - drama_bible
+      - drama_storyboard
+    optional_artifacts_in:
+      - continuity_report
+    produces:
+      - selection_manifest
+      - generation_manifest
+      - asset_manifest
+    required_tools:
+      - image_selector
+    optional_tools:
+      - video_selector
+      - seedance_video
+      - tts_selector
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - drama_open_review
+      - image_selector
+      - video_selector
+      - seedance_video
+      - tts_selector
+    checkpoint_required: true
+    human_approval_default: true
+    review_focus:
+      - Character reference assets are approved before dependent shots
+      - Generation jobs use stable subject IDs and continuity anchors
+      - Paid or long-running generation never starts without confirmation
+    success_criteria:
+      - Selected character, location, prop, and shot assets are recorded
+      - Every generated asset is traceable to a manifest item
+  - name: edit
+    skill: pipelines/ai-short-drama/edit-director
+    required_artifacts_in:
+      - screenplay
+      - drama_storyboard
+      - asset_manifest
+    produces:
+      - voice_plan
+      - edit_decisions
+    required_tools:
+      - video_stitch
+    optional_tools:
+      - tts_selector
+      - subtitle_generator
+      - audio_mixer
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - drama_open_review
+      - tts_selector
+      - video_stitch
+      - subtitle_generator
+      - audio_mixer
+    checkpoint_required: true
+    human_approval_default: false
+    review_focus:
+      - Dialogue, subtitles, action, and shot timing remain synchronized
+      - Episode pacing preserves hook and cliffhanger timing
+    success_criteria:
+      - Voice assignments and edit decisions are explicit and reproducible
+  - name: compose
+    skill: pipelines/ai-short-drama/compose-director
+    required_artifacts_in:
+      - asset_manifest
+      - edit_decisions
+    optional_artifacts_in:
+      - voice_plan
+    produces:
+      - render_report
+      - final_review
+    optional_tools:
+      - video_compose
+      - video_stitch
+      - audio_mixer
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - drama_open_review
+      - video_compose
+      - video_stitch
+      - audio_mixer
+    checkpoint_required: true
+    human_approval_default: true
+    review_focus:
+      - Render dimensions, duration, audio, subtitles, and continuity pass final QA
+      - The approved cut is identified before delivery
+    success_criteria:
+      - Render report and final review are schema-valid
+      - User approves the final cut in the MCP App
+  - name: publish
+    skill: pipelines/ai-short-drama/publish-director
+    required_artifacts_in:
+      - render_report
+      - final_review
+    produces:
+      - publish_log
+    tools_available:
+      - drama_stage_context
+      - drama_artifact_save
+      - register_asset
+    checkpoint_required: true
+    human_approval_default: false
+    review_focus:
+      - Deliverables, metadata, rights notes, and project provenance are complete
+    success_criteria:
+      - The approved master and requested variants are registered and documented

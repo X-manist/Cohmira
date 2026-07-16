@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "useDefineForClassFields": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vitest/globals", "@testing-library/jest-dom", "@webgpu/types"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/vendor/freecut/*"],
+      "@redbox/*": ["src/*"]
+    }
+  },
+  "include": ["src", "shared", "vite.config.ts"],
+  "exclude": [
+    "src/vendor/freecut/infrastructure/analysis",
+    "src/vendor/freecut/infrastructure/gpu/compositor.ts",
+    "src/vendor/freecut/infrastructure/gpu/effects.ts",
+    "src/vendor/freecut/infrastructure/gpu/masks.ts",
+    "src/vendor/freecut/infrastructure/gpu/scopes.ts",
+    "src/vendor/freecut/infrastructure/gpu/transitions.ts",
+    "src/vendor/freecut/shared/components/color-scopes-view.tsx"
+  ]
+}

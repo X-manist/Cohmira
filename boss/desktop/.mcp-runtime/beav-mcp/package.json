@@ -1,0 +1,17 @@
+{
+  "name": "@agentscompany/beav-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP stdio server exposing Beav desktop/workbench capabilities through a local Beav bridge.",
+  "type": "commonjs",
+  "bin": {
+    "beav-mcp": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">商媒运营助手员工工作台界面示意</title>
+  <desc id="desc">展示任务编排、内容生产、素材管理和运营 Agent 协作能力。</desc>
+  <defs>
+    <linearGradient id="bg" x1="80" y1="20" x2="1380" y2="880" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4F8FF"/>
+      <stop offset="0.52" stop-color="#F7F8FC"/>
+      <stop offset="1" stop-color="#F0FAF8"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="54" x2="54" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#27D3B8"/>
+      <stop offset="0.52" stop-color="#528EEB"/>
+      <stop offset="1" stop-color="#886CF4"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="340" y1="180" x2="1050" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF4FF"/>
+      <stop offset="1" stop-color="#F3F0FF"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1440" height="900" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#101828" flood-opacity="0.13"/>
+    </filter>
+    <style>
+      .sans { font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; }
+      .title { fill: #101828; font-weight: 700; }
+      .body { fill: #475467; font-weight: 500; }
+      .muted { fill: #98A2B3; font-weight: 500; }
+    </style>
+  </defs>
+
+  <rect width="1440" height="900" fill="url(#bg)"/>
+  <circle cx="1320" cy="70" r="170" fill="#886CF4" opacity="0.06"/>
+  <circle cx="85" cy="825" r="220" fill="#27D3B8" opacity="0.07"/>
+
+  <g filter="url(#shadow)">
+    <rect x="40" y="38" width="1360" height="824" rx="30" fill="#FFFFFF"/>
+  </g>
+  <rect x="40" y="38" width="1360" height="58" rx="30" fill="#FBFCFE"/>
+  <path d="M40 68C40 51.4315 53.4315 38 70 38H1370C1386.57 38 1400 51.4315 1400 68V96H40V68Z" fill="#FBFCFE"/>
+  <circle cx="74" cy="67" r="6" fill="#FF6B6B"/>
+  <circle cx="96" cy="67" r="6" fill="#FFCC66"/>
+  <circle cx="118" cy="67" r="6" fill="#35C98B"/>
+  <text x="720" y="74" text-anchor="middle" class="sans muted" font-size="15">商媒运营助手 · 员工工作台</text>
+  <rect x="1276" y="53" width="94" height="28" rx="14" fill="#EEF4FF"/>
+  <text x="1323" y="72" text-anchor="middle" class="sans" font-size="12" font-weight="700" fill="#3569C8">界面示意</text>
+
+  <rect x="40" y="96" width="238" height="766" fill="#0B1224"/>
+  <g transform="translate(66 124)">
+    <rect width="48" height="48" rx="14" fill="#151D33"/>
+    <path d="M35 15C31.5 10.8 26.5 8.5 21 8.5C11.7 8.5 6 15.7 6 24C6 32.3 11.7 39.5 21 39.5C26.5 39.5 31.5 37.2 35 33" stroke="url(#brand)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M26 17C27 20.3 29 22.2 32.4 23C29 23.8 27 25.7 26 29C25 25.7 23 23.8 19.6 23C23 22.2 25 20.3 26 17Z" fill="#F8FAFC"/>
+  </g>
+  <text x="126" y="145" class="sans" font-size="18" font-weight="700" fill="#F8FAFC">商媒运营助手</text>
+  <text x="126" y="165" class="sans" font-size="12" font-weight="600" fill="#8F9BB5">Cohmira Workspace</text>
+
+  <text x="66" y="215" class="sans" font-size="11" font-weight="700" letter-spacing="1.5" fill="#667085">运营空间</text>
+  <g class="sans" font-size="14" font-weight="600">
+    <rect x="56" y="230" width="206" height="44" rx="12" fill="#1D3154"/>
+    <circle cx="78" cy="252" r="8" fill="#528EEB"/>
+    <text x="98" y="257" fill="#FFFFFF">任务中心</text>
+    <text x="66" y="309" fill="#A9B4CA">资料库</text>
+    <text x="66" y="354" fill="#A9B4CA">爆品调研</text>
+    <text x="66" y="399" fill="#A9B4CA">内容稿件</text>
+    <text x="66" y="444" fill="#A9B4CA">社媒账号</text>
+    <text x="66" y="489" fill="#A9B4CA">内容创作</text>
+    <text x="66" y="534" fill="#A9B4CA">素材库</text>
+    <text x="66" y="579" fill="#A9B4CA">团队成果</text>
+  </g>
+  <line x1="64" y1="620" x2="250" y2="620" stroke="#25304A"/>
+  <text x="66" y="655" class="sans" font-size="11" font-weight="700" letter-spacing="1.5" fill="#667085">当前空间</text>
+  <rect x="58" y="674" width="198" height="52" rx="12" fill="#151D33" stroke="#2B3552"/>
+  <circle cx="80" cy="700" r="8" fill="#27D3B8"/>
+  <text x="98" y="697" class="sans" font-size="13" font-weight="700" fill="#E4E7EC">新品增长组</text>
+  <text x="98" y="714" class="sans" font-size="11" fill="#8F9BB5">4 个 Agent 在线</text>
+  <rect x="58" y="786" width="198" height="48" rx="12" fill="#10182B"/>
+  <circle cx="82" cy="810" r="13" fill="#528EEB"/>
+  <text x="103" y="806" class="sans" font-size="12" font-weight="700" fill="#F2F4F7">运营专员 · 林澄</text>
+  <text x="103" y="822" class="sans" font-size="10" fill="#8F9BB5">本地工作区已同步</text>
+
+  <text x="318" y="146" class="sans title" font-size="25">今天要推进什么？</text>
+  <text x="318" y="172" class="sans body" font-size="14">Agent 会把目标拆成任务，并在采集、创作、发布与复盘之间持续协作。</text>
+
+  <g>
+    <rect x="318" y="198" width="220" height="92" rx="18" fill="#F8FAFC" stroke="#E4E7EC"/>
+    <circle cx="350" cy="230" r="16" fill="#E9FBF7"/>
+    <path d="M343 230H357M350 223V237" stroke="#0D8B79" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="378" y="228" class="sans body" font-size="13">待执行任务</text>
+    <text x="378" y="260" class="sans title" font-size="27">12</text>
+
+    <rect x="554" y="198" width="220" height="92" rx="18" fill="#F8FAFC" stroke="#E4E7EC"/>
+    <circle cx="586" cy="230" r="16" fill="#EEF4FF"/>
+    <path d="M580 235L586 224L592 235" stroke="#3569C8" stroke-width="2.2" stroke-linejoin="round"/>
+    <text x="614" y="228" class="sans body" font-size="13">Agent 执行中</text>
+    <text x="614" y="260" class="sans title" font-size="27">4</text>
+
+    <rect x="790" y="198" width="220" height="92" rx="18" fill="#F8FAFC" stroke="#E4E7EC"/>
+    <circle cx="822" cy="230" r="16" fill="#F3F0FF"/>
+    <path d="M816 230L820 234L829 225" stroke="#6B55D9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="850" y="228" class="sans body" font-size="13">等待人工确认</text>
+    <text x="850" y="260" class="sans title" font-size="27">3</text>
+  </g>
+
+  <rect x="318" y="314" width="692" height="492" rx="22" fill="#FFFFFF" stroke="#DDE3EC"/>
+  <rect x="318" y="314" width="692" height="82" rx="22" fill="url(#hero)"/>
+  <path d="M318 374H1010" stroke="#DCE4F3"/>
+  <circle cx="356" cy="354" r="19" fill="#0B1224"/>
+  <path d="M365 345C361 341 356 340 352 342C345 345 344 354 349 360C354 366 363 365 367 359" stroke="url(#brand)" stroke-width="3.5" stroke-linecap="round"/>
+  <text x="389" y="349" class="sans title" font-size="17">夏季新品内容增长任务</text>
+  <text x="389" y="371" class="sans body" font-size="12">目标：7 天内完成选题、素材、图文与短视频首轮发布</text>
+  <rect x="892" y="338" width="92" height="30" rx="15" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="913" cy="353" r="5" fill="#27D3B8"/>
+  <text x="926" y="357" class="sans" font-size="11" font-weight="700" fill="#0D8B79">执行中</text>
+
+  <text x="346" y="430" class="sans title" font-size="14">Agent 执行链</text>
+  <g class="sans" font-size="12" font-weight="700">
+    <rect x="346" y="452" width="126" height="42" rx="13" fill="#E9FBF7"/>
+    <circle cx="366" cy="473" r="8" fill="#27D3B8"/>
+    <text x="383" y="477" fill="#087F70">趋势采集</text>
+    <path d="M480 473H504" stroke="#C7D0E0" stroke-width="2" stroke-linecap="round"/>
+    <path d="M498 468L504 473L498 478" stroke="#C7D0E0" stroke-width="2" fill="none"/>
+    <rect x="514" y="452" width="126" height="42" rx="13" fill="#EEF4FF"/>
+    <circle cx="534" cy="473" r="8" fill="#528EEB"/>
+    <text x="551" y="477" fill="#3569C8">选题分析</text>
+    <path d="M648 473H672" stroke="#C7D0E0" stroke-width="2" stroke-linecap="round"/>
+    <path d="M666 468L672 473L666 478" stroke="#C7D0E0" stroke-width="2" fill="none"/>
+    <rect x="682" y="452" width="126" height="42" rx="13" fill="#F3F0FF"/>
+    <circle cx="702" cy="473" r="8" fill="#886CF4"/>
+    <text x="719" y="477" fill="#5747D6">内容生产</text>
+    <path d="M816 473H840" stroke="#C7D0E0" stroke-width="2" stroke-linecap="round"/>
+    <path d="M834 468L840 473L834 478" stroke="#C7D0E0" stroke-width="2" fill="none"/>
+    <rect x="850" y="452" width="126" height="42" rx="13" fill="#FFF4E8"/>
+    <circle cx="870" cy="473" r="8" fill="#F79009"/>
+    <text x="887" y="477" fill="#B54708">发布确认</text>
+  </g>
+
+  <rect x="346" y="522" width="636" height="104" rx="16" fill="#F8FAFC"/>
+  <circle cx="372" cy="550" r="12" fill="#528EEB"/>
+  <text x="394" y="554" class="sans title" font-size="13">你</text>
+  <text x="372" y="585" class="sans body" font-size="13">请为防晒新品制定一周内容计划，先完成小红书和抖音首发。</text>
+  <text x="372" y="608" class="sans muted" font-size="11">已附加：品牌手册.pdf · 产品白底图 8 张</text>
+
+  <rect x="346" y="642" width="636" height="136" rx="16" fill="#0B1224"/>
+  <circle cx="372" cy="670" r="12" fill="#27D3B8"/>
+  <text x="394" y="674" class="sans" font-size="13" font-weight="700" fill="#F8FAFC">运营 Agent</text>
+  <text x="372" y="706" class="sans" font-size="13" font-weight="500" fill="#D0D5DD">已拆分为 4 个阶段、11 个执行任务，并完成第一轮趋势采集。</text>
+  <text x="372" y="731" class="sans" font-size="12" fill="#98A2B3">下一步将生成 3 个选题方向和对应封面草案，发布前会等待你的确认。</text>
+  <rect x="372" y="746" width="132" height="24" rx="12" fill="#1D3154"/>
+  <text x="438" y="762" text-anchor="middle" class="sans" font-size="10" font-weight="700" fill="#BFD2FF">查看任务时间线</text>
+
+  <rect x="1034" y="198" width="330" height="608" rx="22" fill="#F8FAFC" stroke="#E4E7EC"/>
+  <text x="1062" y="238" class="sans title" font-size="17">今日任务</text>
+  <text x="1062" y="260" class="sans muted" font-size="12">Agent 与人工确认统一排队</text>
+  <g class="sans">
+    <rect x="1062" y="284" width="274" height="92" rx="16" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <circle cx="1086" cy="310" r="9" fill="#27D3B8"/>
+    <path d="M1082 310L1085 313L1091 306" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1105" y="312" font-size="13" font-weight="700" fill="#101828">竞品内容样本采集</text>
+    <text x="1105" y="334" font-size="11" fill="#667085">已入库 46 条 · 小红书/抖音</text>
+    <rect x="1105" y="347" width="78" height="18" rx="9" fill="#E9FBF7"/>
+    <text x="1144" y="360" text-anchor="middle" font-size="9" font-weight="700" fill="#087F70">已完成</text>
+
+    <rect x="1062" y="392" width="274" height="104" rx="16" fill="#FFFFFF" stroke="#C9D8F4"/>
+    <circle cx="1086" cy="418" r="9" fill="#528EEB"/>
+    <text x="1105" y="421" font-size="13" font-weight="700" fill="#101828">生成首轮选题方案</text>
+    <text x="1105" y="443" font-size="11" fill="#667085">分析搜索趋势与品牌受众</text>
+    <rect x="1105" y="459" width="100" height="20" rx="10" fill="#EEF4FF"/>
+    <text x="1155" y="473" text-anchor="middle" font-size="9" font-weight="700" fill="#3569C8">Agent 执行中</text>
+
+    <rect x="1062" y="512" width="274" height="104" rx="16" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <circle cx="1086" cy="538" r="9" fill="#F79009"/>
+    <text x="1105" y="541" font-size="13" font-weight="700" fill="#101828">确认 3 张封面方向</text>
+    <text x="1105" y="563" font-size="11" fill="#667085">完成确认后继续生成图文</text>
+    <rect x="1105" y="579" width="84" height="20" rx="10" fill="#FFF4E8"/>
+    <text x="1147" y="593" text-anchor="middle" font-size="9" font-weight="700" fill="#B54708">等待确认</text>
+
+    <rect x="1062" y="632" width="274" height="142" rx="16" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <text x="1082" y="662" font-size="13" font-weight="700" fill="#101828">本周产出</text>
+    <text x="1082" y="696" font-size="24" font-weight="700" fill="#101828">28</text>
+    <text x="1124" y="696" font-size="11" fill="#667085">条内容资产</text>
+    <line x1="1082" y1="718" x2="1316" y2="718" stroke="#EAECF0"/>
+    <text x="1082" y="746" font-size="11" fill="#667085">图文 16 · 视频 6 · 封面 6</text>
+  </g>
+</svg>
+

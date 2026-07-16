@@ -1,0 +1,17 @@
+{
+  "name": "social-connection-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP stdio server for social-auto-upload sau CLI.",
+  "type": "commonjs",
+  "bin": {
+    "social-connection-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

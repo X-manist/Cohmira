@@ -1,0 +1,62 @@
+[package]
+name = "yunying-server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "商媒运营助手 · 桌面应用 Rust 后端，嵌入 Goose + 工具，暴露前端/聊天契约。"
+
+[lib]
+name = "yunying_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "e2e_operations"
+path = "src/bin/e2e_operations.rs"
+required-features = []
+
+[features]
+default = []
+# CDP 扫码登录（chromiumoxide）：真实驱动 Chrome 扫码绑定账号。
+cdp = ["chromiumoxide"]
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "fs", "signal", "time"] }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+axum = { workspace = true }
+tower-http = { workspace = true }
+async-stream = { workspace = true }
+futures = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+mediacrawler = { workspace = true }
+socialconnect = { workspace = true }
+yunying-ops = { workspace = true }
+yunying-config = { workspace = true }
+goose = { path = "../goose", default-features = false, features = ["rustls-tls"] }
+rmcp = { workspace = true }
+tokio-util = { workspace = true }
+rusqlite = { workspace = true }
+parking_lot = { workspace = true }
+arboard = { workspace = true }
+webbrowser = { workspace = true }
+once_cell = { workspace = true }
+reqwest = { workspace = true, features = ["json", "query", "rustls"] }
+async-trait = { workspace = true }
+chromiumoxide = { version = "0.7", default-features = false, features = ["tokio-runtime"], optional = true }
+base64 = { version = "0.22", default-features = false, features = ["std"] }
+sha2 = { workspace = true }
+image = { version = "0.24.9", default-features = false, features = ["png", "jpeg", "webp"] }
+urlencoding = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "test-util"] }
+tower = { version = "0.5", default-features = false, features = ["util"] }
+http-body-util = { version = "0.1", default-features = false }
+tempfile = { workspace = true }

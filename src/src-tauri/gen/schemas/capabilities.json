@@ -1,0 +1,1 @@
+{"main-window":{"identifier":"main-window","description":"Core permissions required by the embedded desktop renderer.","local":true,"windows":["main"],"permissions":["core:default","core:event:default"]}}

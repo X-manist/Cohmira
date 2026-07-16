@@ -1,0 +1,125 @@
+{
+  "name": "openmontage",
+  "displayName": "OpenMontage 视频制作",
+  "version": "0.3.2",
+  "description": "面向中文创作场景的 AI 视频与短剧生产插件，包含视频生成、分段剪辑、成片合成和交互式短剧工作台。",
+  "skills": {
+    "paths": [
+      "./skills",
+      "./.agents/skills"
+    ]
+  },
+  "runtime": {
+    "type": "python",
+    "manager": "uv",
+    "python": "3.11",
+    "requirements": "requirements.txt",
+    "mcp": "mcp/server.py"
+  },
+  "capabilities": {
+    "videoGeneration": "jiuban-app-bridge",
+    "videoEditing": true,
+    "skills": true,
+    "docs": true,
+    "mcpApps": true,
+    "shortDrama": true
+  },
+  "settings": {
+    "version": 1,
+    "title": "OpenMontage 视频工具",
+    "description": "配置 OpenMontage 的默认生成参数。火山引擎密钥、端点和模型仍由九伴智能主应用统一管理。",
+    "fields": [
+      {
+        "key": "general.language",
+        "label": "默认工作语言",
+        "type": "select",
+        "default": "zh-CN",
+        "options": [
+          { "label": "简体中文", "value": "zh-CN" },
+          { "label": "English", "value": "en-US" }
+        ],
+        "description": "用于工具说明、标题、生成提示词和最终交付说明；用户明确指定其他语言时以用户要求为准。",
+        "env": "OPENMONTAGE_LANGUAGE"
+      },
+      {
+        "key": "video.defaultAspectRatio",
+        "label": "默认画幅",
+        "type": "select",
+        "default": "16:9",
+        "options": [
+          { "label": "横屏 16:9", "value": "16:9" },
+          { "label": "竖屏 9:16", "value": "9:16" }
+        ],
+        "env": "OPENMONTAGE_DEFAULT_ASPECT_RATIO"
+      },
+      {
+        "key": "video.defaultResolution",
+        "label": "默认分辨率",
+        "type": "select",
+        "default": "720p",
+        "options": [
+          { "label": "720p", "value": "720p" },
+          { "label": "1080p", "value": "1080p" }
+        ],
+        "env": "OPENMONTAGE_DEFAULT_RESOLUTION"
+      },
+      {
+        "key": "video.defaultDurationSeconds",
+        "label": "默认视频时长（秒）",
+        "type": "integer",
+        "default": 8,
+        "min": 5,
+        "max": 12,
+        "step": 1,
+        "description": "仅在工具调用没有显式指定 duration 时使用。",
+        "env": "OPENMONTAGE_DEFAULT_DURATION_SECONDS"
+      },
+      {
+        "key": "video.generateAudio",
+        "label": "默认生成视频音频",
+        "type": "boolean",
+        "default": true,
+        "description": "工具调用仍可针对单次任务覆盖该设置。",
+        "env": "OPENMONTAGE_DEFAULT_GENERATE_AUDIO"
+      },
+      {
+        "key": "runtime.projectsDirectory",
+        "label": "项目保存目录",
+        "type": "path",
+        "placeholder": "留空时使用当前工作区的 openmontage-projects",
+        "description": "插件升级不会删除该目录中的项目。",
+        "env": "OPENMONTAGE_PROJECTS_DIR"
+      },
+      {
+        "key": "analysis.visionModel",
+        "label": "视觉分析模型",
+        "type": "string",
+        "placeholder": "留空时跟随九伴智能当前模型",
+        "advanced": true,
+        "env": "OPENMONTAGE_VISION_ANALYZER_MODEL"
+      },
+      {
+        "key": "runtime.bridgeTimeoutMs",
+        "label": "视频桥接超时（毫秒）",
+        "type": "integer",
+        "default": 1800000,
+        "min": 60000,
+        "max": 7200000,
+        "step": 1000,
+        "advanced": true,
+        "env": "BEAV_BRIDGE_TIMEOUT_MS"
+      },
+      {
+        "key": "runtime.mcpTimeoutMs",
+        "label": "MCP 调用超时（毫秒）",
+        "type": "integer",
+        "default": 1800000,
+        "min": 60000,
+        "max": 7200000,
+        "step": 1000,
+        "advanced": true,
+        "env": "OPENMONTAGE_MCP_TIMEOUT_MS"
+      }
+    ]
+  }
+}

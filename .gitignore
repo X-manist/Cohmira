@@ -1,0 +1,67 @@
+# Operating system and editor files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+.tmp/
+**/.tmp/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.certSigningRequest
+src/config.json
+
+# JavaScript package managers and caches
+**/node_modules/
+**/.pnpm-store/
+**/.npm/
+**/.yarn/cache/
+**/.vite/
+
+# Frontend, extension, and desktop build outputs
+**/dist/
+**/dist-electron/
+**/desktop-dist/
+**/release/
+**/artifacts/
+**/coverage/
+**/e2e-artifacts/
+**/playwright-report/
+**/test-results/
+src/Plugin/dist/
+boss/Plugin/dist/
+
+# Rust and Tauri build outputs
+**/target/
+src/src-tauri/runtime/bin/*
+
+# Local application runtimes and user data
+**/.private-runtime/
+**/.plugin-runtime/
+**/.ffmpeg-runtime/
+**/.goose-runtime/
+**/.goose-runtime-src/
+**/.e2e-goose-home/
+**/.e2e-goose-operations-home/
+**/.opencode/
+**/.redconvert/
+**/.redbox-dev/
+src/sourcecoderef
+src/e2e-artifacts

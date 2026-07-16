@@ -1,0 +1,165 @@
+# 商媒运营助手 (YunyingAgent) — Rust 核心工作区
+#
+# 本工作区是重构后的统一 Rust 后端，以 Goose 为底层 agent 框架。
+# - crates/goose*          Goose 核心与可选 goosed 服务（从 goose-cc 复制，路径自洽）
+# - crates/mediacrawler    自媒体平台信息采集（替代 MediaCrawler Python）
+# - crates/socialconnect   自媒体自动发布（替代 social-auto-upload Python）
+# - builtin-plugins/       Python/Node 插件源码；由 uv 按需提供 Python 运行时
+# - crates/yunying-ops     运营智能体统一 MCP/操作面（替代 mcps/operations-mcp）
+# - crates/yunying-config  config.json 配置加载（替代 .env）
+# - crates/yunying-server  桌面应用 Rust 后端（嵌入 Goose + 工具，暴露前端契约）
+#
+# 设计目标：Rust 承载桌面核心；可选能力通过标准插件安装，Python 插件统一由 uv 管理。
+
+[workspace]
+# Goose 默认由 yunying-server 以库方式嵌入；goose-server 作为可选 goosed 二进制保留，
+# 供老板端遗留 Electron 桥接通过 `npm run goose:build` 从源码按需编译。
+members = [
+    "crates/goose",
+    "crates/goose-acp-macros",
+    "crates/goose-context-core",
+    "crates/goose-providers",
+    "crates/goose-sdk-types",
+    "crates/goose-server",
+    # goose-mcp 与 goose-test-support 会因 path dependency 自动进入 workspace。
+    # 商媒运营助手自研 crate
+    "crates/mediacrawler",
+    "crates/socialconnect",
+    "crates/yunying-ops",
+    "crates/yunying-config",
+    "crates/yunying-server",
+]
+# goosed 是可选 sidecar；保持原有核心与自研 crate 作为 workspace 默认构建集合。
+default-members = [
+    "crates/goose",
+    "crates/goose-acp-macros",
+    "crates/goose-context-core",
+    "crates/goose-providers",
+    "crates/goose-sdk-types",
+    "crates/mediacrawler",
+    "crates/socialconnect",
+    "crates/yunying-ops",
+    "crates/yunying-config",
+    "crates/yunying-server",
+]
+# src-tauri 是独立桌面打包目标（tauri 重依赖 + 需前端 dist），不纳入核心工作区。
+exclude = ["src-tauri"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+rust-version = "1.91.1"
+authors = ["AgentsCompany <dev@agentscompany.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/X-manist/Beav"
+description = "商媒运营助手 — 以 Goose 为核心的电商与自媒体运营后端"
+
+[workspace.lints.clippy]
+uninlined_format_args = "allow"
+string_slice = "warn"
+
+# 依赖表从 goose-cc 继承，保证 goose crates 的 `workspace = true` 引用可解析。
+[workspace.dependencies]
+rmcp = { version = "=1.8.0", default-features = false, features = ["schemars", "auth"] }
+agent-client-protocol-schema = { version = "0.12", default-features = false, features = ["unstable"] }
+agent-client-protocol = { version = "0.11", default-features = false }
+arboard = { version = "3", default-features = false, features = ["image-data"] }
+anyhow = { version = "1.0.102", default-features = false, features = ["std"] }
+async-stream = { version = "0.3.6", default-features = false }
+async-trait = { version = "0.1.89", default-features = false }
+axum = { version = "0.8", default-features = false, features = ["http1", "http2", "json", "tokio", "query"] }
+base64 = { version = "0.22.1", default-features = false, features = ["std"] }
+bytes = { version = "1.10.1", default-features = false, features = ["std"] }
+candle-core = { version = "0.10", default-features = false }
+candle-nn = { version = "0.10", default-features = false }
+chrono = { version = "0.4.44", default-features = false, features = ["serde", "std"] }
+clap = { version = "4.1.14", default-features = false, features = ["derive", "std", "help", "suggestions", "usage", "color", "error-context"] }
+dirs = { version = "5", default-features = false }
+dotenvy = { version = "0.15.7", default-features = false }
+env-lock = { version = "1", default-features = false }
+etcetera = { version = "0.11", default-features = false }
+fs2 = { version = "0.4", default-features = false }
+futures = { version = "0.3.32", default-features = false, features = ["std"] }
+http = { version = "1.1", default-features = false, features = ["std"] }
+ignore = { version = "0.4.12", default-features = false }
+include_dir = { version = "0.7", default-features = false }
+indoc = { version = "2", default-features = false }
+keyring = { version = "3.6.3", default-features = false, features = ["vendored"] }
+lru = { version = "0.16", default-features = false }
+once_cell = { version = "1.21.3", default-features = false, features = ["std"] }
+rand = { version = "0.8.5", default-features = false, features = ["std"] }
+regex = { version = "1.12.3", default-features = false, features = ["std"] }
+reqwest = { version = "0.13.2", default-features = false, features = ["multipart", "form"] }
+scraper = { version = "0.27.0", default-features = false }
+rustls = { version = "0.23.31", default-features = false, features = ["aws_lc_rs", "std"] }
+schemars = { version = "1.0.2", default-features = false, features = ["std"] }
+serde = { version = "1.0.228", default-features = false, features = ["derive", "std"] }
+serde_json = { version = "1.0.145", default-features = false, features = ["std"] }
+serde_yaml = { version = "0.9.32", default-features = false }
+shellexpand = { version = "3", default-features = false, features = ["base-0", "tilde"] }
+strum = { version = "0.28.0", default-features = false, features = ["derive", "std"] }
+tempfile = { version = "3.10.1", default-features = false }
+thiserror = { version = "1.0.49", default-features = false }
+tokio = { version = "1.48", default-features = false }
+tokio-stream = { version = "0.1.16", default-features = false }
+tokio-util = { version = "0.7.12", default-features = false }
+tower-http = { version = "0.6.8", default-features = false }
+tracing = { version = "0.1.43", default-features = false, features = ["std"] }
+tracing-appender = { version = "0.2.1", default-features = false }
+tracing-futures = { version = "0.2.4", default-features = false, features = ["futures-03", "std", "std-future"] }
+tracing-subscriber = { version = "0.3.22", default-features = false, features = ["std"] }
+urlencoding = { version = "2.1", default-features = false }
+utoipa = { version = "4.2", default-features = false }
+uuid = { version = "1.23", default-features = false, features = ["v4", "std"] }
+webbrowser = { version = "1", default-features = false }
+which = { version = "8", default-features = false, features = ["real-sys"] }
+winapi = { version = "0.3.9", default-features = false, features = ["wincred", "std"] }
+wiremock = { version = "0.6", default-features = false }
+zip = { version = "8", default-features = false, features = ["deflate"] }
+serial_test = { version = "3", default-features = false }
+sha2 = { version = "0.11", default-features = false }
+shell-words = { version = "1", default-features = false, features = ["std"] }
+test-case = { version = "3", default-features = false }
+url = { version = "2.5.4", default-features = false, features = ["std"] }
+opentelemetry = { version = "0.32", default-features = false }
+opentelemetry_sdk = { version = "0.32", default-features = false, features = ["metrics"] }
+opentelemetry-http = { version = "0.32", default-features = false, features = ["internal-logs", "reqwest"] }
+opentelemetry-otlp = { version = "0.32", default-features = false, features = ["http-proto", "internal-logs", "logs", "metrics", "reqwest-client", "trace"] }
+opentelemetry-appender-tracing = { version = "0.32", default-features = false, features = ["experimental_span_attributes"] }
+opentelemetry-stdout = { version = "0.32", default-features = false, features = ["trace", "metrics", "logs"] }
+tracing-opentelemetry = { version = "0.33", default-features = false, features = ["metrics"] }
+
+rayon = { version = "1.10", default-features = false }
+tree-sitter = { version = "0.26", default-features = false, features = ["std"] }
+tree-sitter-go = { version = "0.25", default-features = false }
+tree-sitter-java = { version = "0.23", default-features = false }
+tree-sitter-javascript = { version = "0.25", default-features = false }
+tree-sitter-kotlin-ng = { version = "1", default-features = false }
+tree-sitter-python = { version = "0.25", default-features = false }
+tree-sitter-ruby = { version = "0.23", default-features = false }
+tree-sitter-rust = { version = "0.24", default-features = false }
+tree-sitter-swift = { version = "0.7", default-features = false }
+tree-sitter-typescript = { version = "0.23", default-features = false }
+
+llama-cpp-2 = { version = "=0.1.146", default-features = false, features = ["sampler", "mtmd"] }
+llama-cpp-sys-2 = { version = "=0.1.146", default-features = false }
+
+icu_calendar = { version = "=2.1.1", default-features = false }
+icu_locale = { version = "=2.1.1", default-features = false }
+
+# 哈希（mediacrawler 签名：bilibili wbi 用 md5）
+md-5 = { version = "0.10", default-features = false }
+# JS 引擎（mediacrawler 签名：douyin/zhihu 跑原 libs/*.js）
+boa_engine = { version = "0.20", default-features = false }
+# 嵌入式 SQLite（yunying-server DB Repository，替代 better-sqlite3）
+# 钉 0.32 使 libsqlite3-sys 与 goose 依赖的 sqlx(0.30.x) 统一，避免 sqlite3 链接冲突。
+rusqlite = { version = "0.32", default-features = false, features = ["bundled"] }
+parking_lot = { version = "0.12", default-features = false }
+
+# 商媒运营助手自研 crate 之间互引（workspace 内 path）
+mediacrawler = { path = "crates/mediacrawler" }
+socialconnect = { path = "crates/socialconnect" }
+yunying-ops = { path = "crates/yunying-ops" }
+yunying-config = { path = "crates/yunying-config" }
+yunying-server = { path = "crates/yunying-server" }
