@@ -155,6 +155,10 @@ export async function findFile(root, expectedName) {
   return null;
 }
 
+export function ffmpegRuntimeSource(executablePath) {
+  return path.dirname(executablePath);
+}
+
 export function pythonPathFileContents() {
   return [
     'python311.zip',

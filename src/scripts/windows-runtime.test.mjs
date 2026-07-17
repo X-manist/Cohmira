@@ -11,6 +11,7 @@ import {
   REQUIRED_PYTHON_DISTRIBUTIONS,
   WINDOWS_RUNTIME_SPEC,
   auditWindowsRequirementsLock,
+  ffmpegRuntimeSource,
   pythonPathFileContents,
   runtimeManifest,
   validateWindowsRuntime,
@@ -50,6 +51,14 @@ describe('Windows offline runtime contract', () => {
     const contents = pythonPathFileContents();
     assert.match(contents, /Lib\/site-packages/);
     assert.match(contents, /import site/);
+  });
+
+  it('places FFmpeg executables at the runtime root expected by Tauri', () => {
+    const executable = path.join('archive', 'ffmpeg-build', 'bin', 'ffmpeg.exe');
+    assert.equal(
+      ffmpegRuntimeSource(executable),
+      path.join('archive', 'ffmpeg-build', 'bin'),
+    );
   });
 
   it('keeps the complete Windows dependency closure exactly pinned', async () => {

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import {
   WINDOWS_RUNTIME_SPEC,
   auditWindowsRequirementsLock,
+  ffmpegRuntimeSource,
   findFile,
   pathExists,
   pythonPathFileContents,
@@ -123,7 +124,7 @@ async function installFfmpeg(cacheDir, temporaryRoot) {
   expandArchive(archive, extractRoot);
   const executable = await findFile(extractRoot, 'ffmpeg.exe');
   if (!executable) throw new Error('FFmpeg archive does not contain ffmpeg.exe');
-  const distributionRoot = path.dirname(path.dirname(executable));
+  const distributionRoot = ffmpegRuntimeSource(executable);
   await rm(ffmpegRoot, { recursive: true, force: true });
   await cp(distributionRoot, ffmpegRoot, { recursive: true });
 }
