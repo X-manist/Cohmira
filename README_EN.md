@@ -212,16 +212,16 @@ cargo check --manifest-path src/Cargo.toml --locked \
 ## Automated Checks and Releases
 
 - [`.github/workflows/check.yml`](./.github/workflows/check.yml) checks brand assets, all three frontends, and the Rust core on normal pushes, pull requests, and manual runs.
-- [`.github/workflows/release.yml`](./.github/workflows/release.yml) builds and publishes on `release/**` pushes and also accepts the legacy `relase/**` spelling.
-- The parent release publishes the employee macOS DMG, Windows x64 NSIS installer, boss-client web ZIP, browser-extension ZIP, and SHA-256 checksums. The boss repository's separate `boss-desktop-check.yml` validates and emits unsigned macOS `.app` and Windows NSIS artifacts.
-- Release tags use `v<version>-build.<GitHub Actions run number>`.
+- [`.github/workflows/release.yml`](./.github/workflows/release.yml) builds and publishes when a `v*` tag matching the employee version is pushed, and it also supports manual dispatch from the Actions page.
+- The parent release currently publishes only the employee macOS DMG, Windows x64 NSIS installer, and SHA-256 checksums. The boss client and browser extension will be released separately later.
+- All three employee version files must agree, and release tags use `v<version>`.
 
 ```bash
-git switch -c release/0.1.0
-git push -u origin release/0.1.0
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-The macOS package uses ad-hoc signing and is not Apple-notarized. CI bundles the current platform's `uv`; FFmpeg and its dynamic libraries must still be supplied per platform for a complete offline media runtime.
+The first automated package is published as a prerelease. macOS uses ad-hoc signing, is not notarized, and bundles `uv` without the complete offline FFmpeg/Python runtimes. The Windows installer includes pinned FFmpeg and Python plugin offline runtimes but is not Authenticode-signed yet.
 
 ## Repository Layout
 

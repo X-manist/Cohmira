@@ -1,24 +1,66 @@
-name: Package and Release
+name: Employee Desktop Release
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - 'release/**'
-      - 'relase/**'
+    tags:
+      - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: true
+  group: employee-release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'
-  RUST_VERSION: '1.91.1'
+  RUST_VERSION: '1.92'
   TAURI_CLI_VERSION: '2.11.4'
 
 jobs:
+  release-metadata:
+    name: Validate employee release metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.metadata.outputs.tag }}
+      version: ${{ steps.metadata.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate tag and package versions
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "JSON.parse(require('fs').readFileSync('src/src-tauri/tauri.conf.json', 'utf8')).version")"
+          desktop_version="$(node -p "JSON.parse(require('fs').readFileSync('src/desktop/package.json', 'utf8')).version")"
+          cargo_version="$(sed -n 's/^version = \"\([^\"]*\)\"/\1/p' src/src-tauri/Cargo.toml | head -n 1)"
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid Tauri version: $version"
+            exit 1
+          fi
+          if [[ "$desktop_version" != "$version" || "$cargo_version" != "$version" ]]; then
+            echo "::error::Employee versions differ: tauri=$version desktop=$desktop_version cargo=$cargo_version"
+            exit 1
+          fi
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="v${version}"
+          fi
+          if [[ "$tag" != "v${version}" ]]; then
+            echo "::error::Release tag $tag must match employee version v${version}"
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
   checks:
     name: Run required checks
     uses: ./.github/workflows/check.yml
@@ -27,9 +69,11 @@ jobs:
 
   package-macos:
     name: Package employee client for macOS
-    needs: checks
+    needs:
+      - checks
+      - release-metadata
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -78,14 +122,14 @@ jobs:
         run: |
           set -euo pipefail
           cd src
-          tauri build --bundles dmg
+          tauri build --bundles dmg -- --locked
 
       - name: Normalize macOS artifact name
         id: artifact
         shell: bash
         run: |
           set -euo pipefail
-          version="$(node -p "JSON.parse(require('fs').readFileSync('src/src-tauri/tauri.conf.json', 'utf8')).version")"
+          version="${{ needs.release-metadata.outputs.version }}"
           arch="$(uname -m)"
           if [[ "$arch" == "x86_64" ]]; then arch="x64"; fi
           dmg="$(find src/src-tauri/target -type f -path '*/bundle/dmg/*.dmg' -print -quit)"
@@ -101,16 +145,18 @@ jobs:
       - name: Upload macOS package
         uses: actions/upload-artifact@v4
         with:
-          name: release-macos
+          name: employee-release-macos
           path: ${{ steps.artifact.outputs.path }}
           if-no-files-found: error
           retention-days: 14
 
   package-windows:
     name: Package employee client for Windows
-    needs: checks
+    needs:
+      - checks
+      - release-metadata
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -173,7 +219,7 @@ jobs:
         run: |
           Push-Location src
           try {
-            tauri build --bundles nsis
+            tauri build --bundles nsis -- --locked
           } finally {
             Pop-Location
           }
@@ -182,7 +228,7 @@ jobs:
         id: artifact
         shell: pwsh
         run: |
-          $version = (Get-Content src/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $version = '${{ needs.release-metadata.outputs.version }}'
           $installer = Get-ChildItem src/src-tauri/target -Recurse -File -Filter *.exe |
             Where-Object { $_.FullName -match '[\\/]bundle[\\/]nsis[\\/]' } |
             Select-Object -First 1
@@ -197,92 +243,26 @@ jobs:
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: release-windows
+          name: employee-release-windows
           path: ${{ steps.artifact.outputs.path }}
           if-no-files-found: error
           retention-days: 14
 
-  package-web-assets:
-    name: Package boss web client and browser extension
-    needs: checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.28.2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: src/Plugin/pnpm-lock.yaml
-
-      - name: Build boss frontend
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm ci --prefix boss/desktop
-          npm run build --prefix boss/desktop
-
-      - name: Build browser extension
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm --dir src/Plugin install --frozen-lockfile
-          pnpm --dir src/Plugin build
-          pnpm --dir src/Plugin typecheck
-
-      - name: Create ZIP packages
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="$(node -p "JSON.parse(require('fs').readFileSync('src/src-tauri/tauri.conf.json', 'utf8')).version")"
-          plugin_version="$(node -p "JSON.parse(require('fs').readFileSync('src/Plugin/package.json', 'utf8')).version")"
-          mkdir -p release-assets
-
-          (
-            cd boss/desktop/dist
-            zip -qr "../../../release-assets/Cohmira-Command-${version}-web.zip" .
-          )
-          (
-            cd src/Plugin/dist/extension
-            zip -qr "../../../../release-assets/Cohmira-Browser-Extension-${plugin_version}.zip" .
-          )
-
-      - name: Upload web packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-web-assets
-          path: release-assets/*
-          if-no-files-found: error
-          retention-days: 14
-
   publish-release:
-    name: Publish GitHub Release
+    name: Publish employee GitHub Release
     needs:
+      - release-metadata
       - package-macos
       - package-windows
-      - package-web-assets
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
       - name: Download release packages
         uses: actions/download-artifact@v4
         with:
-          pattern: release-*
+          pattern: employee-release-*
           path: release-assets
           merge-multiple: true
 
@@ -291,29 +271,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="$(node -p "JSON.parse(require('fs').readFileSync('src/src-tauri/tauri.conf.json', 'utf8')).version")"
-          branch="${GITHUB_REF_NAME#release/}"
-          branch="${branch#relase/}"
-          tag="v${version}-build.${GITHUB_RUN_NUMBER}"
-          title="商媒运营助手 Cohmira ${version} · ${branch} · build ${GITHUB_RUN_NUMBER}"
+          version="${{ needs.release-metadata.outputs.version }}"
+          tag="${{ needs.release-metadata.outputs.tag }}"
+          title="Cohmira Workspace ${version}"
 
-          cd release-assets
-          sha256sum ./* > SHA256SUMS.txt
-          cd ..
+          shopt -s nullglob
+          packages=(release-assets/*.dmg release-assets/*.exe)
+          if [[ "${#packages[@]}" -ne 2 ]]; then
+            echo "::error::Expected one DMG and one Windows installer, found ${#packages[@]} packages"
+            printf '%s\n' "${packages[@]}"
+            exit 1
+          fi
+          (
+            cd release-assets
+            sha256sum ./*.dmg ./*.exe > SHA256SUMS.txt
+          )
 
           cat > release-notes.md <<EOF
-          Automated 商媒运营助手 Cohmira package from branch \`${GITHUB_REF_NAME}\`.
+          Automated employee desktop prerelease for 商媒运营助手 Cohmira Workspace ${version}.
 
           Commit: \`${GITHUB_SHA}\`
 
           Included artifacts:
           - Cohmira Workspace macOS DMG (ad-hoc signed, not notarized)
-          - Cohmira Workspace Windows x64 NSIS installer
-          - Cohmira Command static web bundle
-          - Cohmira browser extension ZIP
+          - Cohmira Workspace Windows x64 NSIS installer (unsigned)
           - SHA-256 checksums
 
-          The boss web bundle still requires its local API/MCP bridge. The Windows employee installer includes the pinned FFmpeg and Python plugin offline runtimes.
+          The Windows installer includes the pinned FFmpeg and Python plugin offline runtimes. The macOS package includes uv but does not yet bundle complete offline FFmpeg/Python runtimes. Gatekeeper or SmartScreen may warn because these prerelease packages do not use production signing certificates.
           EOF
 
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -327,12 +311,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if existing_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq .sha 2>/dev/null)"; then
+            if [[ "$existing_sha" != "$GITHUB_SHA" ]]; then
+              echo "::error::Tag $RELEASE_TAG already points to $existing_sha instead of $GITHUB_SHA"
+              exit 1
+            fi
+          fi
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release edit "$RELEASE_TAG" --title "$RELEASE_TITLE" --notes-file release-notes.md
+            gh release edit "$RELEASE_TAG" \
+              --title "$RELEASE_TITLE" \
+              --notes-file release-notes.md \
+              --prerelease
             gh release upload "$RELEASE_TAG" release-assets/* --clobber
           else
             gh release create "$RELEASE_TAG" release-assets/* \
               --target "$GITHUB_SHA" \
               --title "$RELEASE_TITLE" \
-              --notes-file release-notes.md
+              --notes-file release-notes.md \
+              --prerelease
           fi

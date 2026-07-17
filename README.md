@@ -212,16 +212,16 @@ cargo check --manifest-path src/Cargo.toml --locked \
 ## 📦 自动检查与发布
 
 - [`.github/workflows/check.yml`](./.github/workflows/check.yml) 在普通分支 push、Pull Request 和手动触发时检查品牌资源、三端前端和 Rust 核心。
-- [`.github/workflows/release.yml`](./.github/workflows/release.yml) 在 `release/**` 分支 push 时构建并发布；同时兼容 `relase/**` 拼写。
-- 父仓发布产物包括员工端 macOS DMG、Windows x64 NSIS 安装器、老板端 Web ZIP、浏览器扩展 ZIP 和 SHA-256 校验文件；老板端独立仓库的 `boss-desktop-check.yml` 另行验证并产出未签名的 macOS `.app` 与 Windows NSIS 包。
-- Release 标签格式为 `v<版本>-build.<Actions 运行编号>`。
+- [`.github/workflows/release.yml`](./.github/workflows/release.yml) 在推送与员工端版本一致的 `v*` 标签时构建并发布，也支持在 Actions 页面手动触发。
+- 当前父仓 Release 只发布员工端 macOS DMG、Windows x64 NSIS 安装器和 SHA-256 校验文件；老板端与浏览器扩展后续独立发布。
+- 员工端三个版本文件必须一致，Release 标签格式为 `v<版本>`。
 
 ```bash
-git switch -c release/0.1.0
-git push -u origin release/0.1.0
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-macOS 自动包使用 ad-hoc 签名但尚未接入 Apple 公证。CI 会打包当前平台的 `uv`；FFmpeg 及其动态库仍需按平台补齐后才能形成完整离线媒体运行时。
+首个自动包以 prerelease 发布。macOS 使用 ad-hoc 签名、尚未接入 Apple 公证，并且只内置 `uv`，完整离线 FFmpeg/Python 运行时仍待补齐；Windows 安装器包含固定版本的 FFmpeg 与 Python 插件离线运行时，但尚未接入 Authenticode 签名。
 
 ## 🗂 仓库结构
 
