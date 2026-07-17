@@ -108,6 +108,9 @@ jobs:
       - name: Test bundled configuration safety
         run: node --test src/scripts/tauri-bundle-config.test.mjs
 
+      - name: Test Tauri build command contract
+        run: node --test src/scripts/tauri-build-lib.test.mjs
+
       - name: Build employee frontend
         run: npm run build --prefix src/desktop
 

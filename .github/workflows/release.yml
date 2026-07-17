@@ -87,6 +87,9 @@ jobs:
           cache: npm
           cache-dependency-path: src/desktop/package-lock.json
 
+      - name: Test Windows Tauri build command contract
+        run: node --test src/scripts/tauri-build-lib.test.mjs
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v8.3.2
 
@@ -219,7 +222,8 @@ jobs:
         run: |
           Push-Location src
           try {
-            tauri build --bundles nsis -- --locked
+            # The npm PowerShell shim consumes `--`; the cmd shim preserves Cargo arguments.
+            tauri.cmd build --bundles nsis -- --locked
           } finally {
             Pop-Location
           }

@@ -4,6 +4,8 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { frontendBuildInvocation } from './tauri-build-lib.mjs';
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDir, '..');
 const desktopDir = path.join(workspaceRoot, 'desktop');
@@ -11,7 +13,6 @@ const tauriDir = path.join(workspaceRoot, 'src-tauri');
 const runtimeBinDir = path.join(tauriDir, 'runtime', 'bin');
 const configExamplePath = path.join(workspaceRoot, 'config.json.example');
 
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const cargoCommand = process.platform === 'win32' ? 'cargo.exe' : 'cargo';
 const executableSuffix = process.platform === 'win32' ? '.exe' : '';
 
@@ -47,7 +48,8 @@ if (process.platform === 'win32') {
   run(process.execPath, [path.join(scriptDir, 'prepare-windows-runtime.mjs')], workspaceRoot);
 }
 
-run(npmCommand, ['run', 'build'], desktopDir);
+const frontendBuild = frontendBuildInvocation();
+run(frontendBuild.command, frontendBuild.args, desktopDir);
 run(cargoCommand, [
   'build',
   '--manifest-path',
