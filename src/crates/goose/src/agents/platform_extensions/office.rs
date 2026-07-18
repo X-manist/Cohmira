@@ -2,6 +2,7 @@ use crate::agents::extension::PlatformExtensionContext;
 use crate::agents::mcp_client::{Error, McpClientTrait};
 use crate::agents::platform_extensions::developer::edit::resolve_path;
 use crate::agents::tool_execution::ToolCallContext;
+use crate::document::{ensure_document_path_allowed, extract_document, extract_pdf_pages};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use base64::Engine;
@@ -27,6 +28,16 @@ const MAX_TEXT_CHARS: usize = 200_000;
 const PDF_COMMAND_TIMEOUT_SECS: u64 = 60;
 const EXPORT_COMMAND_TIMEOUT_SECS: u64 = 180;
 const MAX_IMAGE_BYTES: u64 = 20 * 1024 * 1024;
+
+#[derive(Debug, Deserialize, JsonSchema)]
+struct DocumentReadParams {
+    /// Local PDF, DOCX, PPTX, XLSX/XLSM, or text file path.
+    /// Relative paths are resolved from the current session working directory.
+    path: String,
+    /// Maximum characters returned inline. Full bounded extraction is saved as a session artifact.
+    #[serde(default)]
+    max_chars: Option<usize>,
+}
 
 #[derive(Debug, Deserialize, JsonSchema)]
 struct PdfReadParams {
@@ -158,7 +169,9 @@ impl OfficeClient {
                 indoc! {r#"
                 Office tools provide document and presentation workflows.
 
-                Use pdf_read/pdf_search before asking the model to reason over PDF content.
+                Use document_read for PDF, DOCX, PPTX, XLSX/XLSM, and text files.
+                It is a local, read-only Rust parser and does not execute macros or embedded objects.
+                Use pdf_read/pdf_search when a PDF page range or text search is needed.
                 Use pdf_render when visual inspection of a page matters.
                 Use ppt_create to generate a controlled HTML/Markdown deck, then run ppt_lint before exporting.
                 For production slides, prefer iterating until ppt_lint passes and screenshot/export checks are clean.
@@ -180,8 +193,20 @@ impl OfficeClient {
     fn tools() -> Vec<Tool> {
         vec![
             Tool::new(
+                "document_read".to_string(),
+                "Read text and basic structure from PDF, DOCX, PPTX, XLSX/XLSM, and text files using local read-only Rust parsers. No Python, Office, LibreOffice, or Poppler is required.".to_string(),
+                Self::schema::<DocumentReadParams>(),
+            )
+            .annotate(ToolAnnotations::from_raw(
+                Some("Read Document".to_string()),
+                Some(true),
+                Some(false),
+                Some(true),
+                Some(false),
+            )),
+            Tool::new(
                 "pdf_read".to_string(),
-                "Extract bounded text from a PDF page range using the local pdftotext backend. Full output is saved as a session artifact.".to_string(),
+                "Extract bounded text from a PDF page range using the local Rust PDF backend. Full output is saved as a session artifact.".to_string(),
                 Self::schema::<PdfReadParams>(),
             )
             .annotate(ToolAnnotations::from_raw(
@@ -273,6 +298,66 @@ impl OfficeClient {
         fs::create_dir_all(&dir)
             .with_context(|| format!("failed to create artifact dir {}", dir.display()))?;
         Ok(dir)
+    }
+
+    async fn handle_document_read(
+        &self,
+        ctx: &ToolCallContext,
+        params: DocumentReadParams,
+    ) -> Result<CallToolResult, String> {
+        let requested_path = resolve_existing_file(&params.path, ctx.working_dir.as_deref())?;
+        let document_path =
+            ensure_document_path_allowed(&requested_path).map_err(|error| error.to_string())?;
+        let extraction_path = document_path.clone();
+        let extraction =
+            tokio::task::spawn_blocking(move || extract_document(&extraction_path, MAX_TEXT_CHARS))
+                .await
+                .map_err(|error| format!("document reader task failed: {error}"))?
+                .map_err(|error| error.to_string())?;
+        let artifact_path = self
+            .write_text_artifact(
+                &ctx.session_id,
+                "document_text",
+                &document_path,
+                extraction.format.as_str(),
+                &extraction.text,
+            )
+            .map_err(|error| error.to_string())?;
+        let inline_limit = params
+            .max_chars
+            .unwrap_or(DEFAULT_MAX_CHARS)
+            .clamp(1, MAX_TEXT_CHARS);
+        let (preview, inline_truncated) = truncate_chars(&extraction.text, inline_limit);
+        let summary = format!(
+            "document_path: {}\nformat: {}\nsections: {}\nchars_observed: {}\ntruncated_extraction: {}\ntruncated_inline: {}\nartifact_path: {}\nwarnings: {}\n\n{}",
+            document_path.display(),
+            extraction.format.as_str(),
+            extraction.section_count,
+            extraction.char_count,
+            extraction.truncated,
+            inline_truncated,
+            artifact_path.display(),
+            if extraction.warnings.is_empty() {
+                "none".to_string()
+            } else {
+                extraction.warnings.join("; ")
+            },
+            preview,
+        );
+
+        let mut result = CallToolResult::success(vec![Content::text(summary)]);
+        result.structured_content = Some(json!({
+            "documentPath": document_path,
+            "format": extraction.format,
+            "sectionCount": extraction.section_count,
+            "charCount": extraction.char_count,
+            "preview": preview,
+            "truncatedExtraction": extraction.truncated,
+            "truncatedInline": inline_truncated,
+            "warnings": extraction.warnings,
+            "artifactPath": artifact_path,
+        }));
+        Ok(result)
     }
 
     async fn handle_pdf_read(
@@ -695,6 +780,10 @@ impl McpClientTrait for OfficeClient {
         _cancel_token: CancellationToken,
     ) -> Result<CallToolResult, Error> {
         let result = match name {
+            "document_read" => match Self::parse_args::<DocumentReadParams>(arguments) {
+                Ok(params) => self.handle_document_read(ctx, params).await,
+                Err(error) => Err(error),
+            },
             "pdf_read" => match Self::parse_args::<PdfReadParams>(arguments) {
                 Ok(params) => self.handle_pdf_read(ctx, params).await,
                 Err(error) => Err(error),
@@ -765,27 +854,16 @@ async fn extract_pdf_text(
     pdf_path: &Path,
     start_page: u32,
     end_page: Option<u32>,
-    layout: bool,
+    _layout: bool,
 ) -> Result<String, String> {
-    ensure_program(
-        "pdftotext",
-        "Install poppler (macOS: brew install poppler) to read PDFs.",
-    )?;
-    let mut args = Vec::new();
-    if layout {
-        args.push(OsString::from("-layout"));
-    }
-    args.push(OsString::from("-enc"));
-    args.push(OsString::from("UTF-8"));
-    args.push(OsString::from("-f"));
-    args.push(OsString::from(start_page.to_string()));
-    if let Some(end) = end_page {
-        args.push(OsString::from("-l"));
-        args.push(OsString::from(end.max(start_page).to_string()));
-    }
-    args.push(pdf_path.as_os_str().to_os_string());
-    args.push(OsString::from("-"));
-    run_command("pdftotext", args, PDF_COMMAND_TIMEOUT_SECS).await
+    let path = pdf_path.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        extract_pdf_pages(path, start_page, end_page, MAX_TEXT_CHARS)
+            .map(|extraction| extraction.text)
+    })
+    .await
+    .map_err(|error| format!("PDF reader task failed: {error}"))?
+    .map_err(|error| error.to_string())
 }
 
 async fn run_command(

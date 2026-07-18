@@ -17,6 +17,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use goose::document::{allow_document_path, is_supported_document_path, revoke_document_path};
 use serde_json::{json, Map, Value};
 
 use super::AppState;
@@ -131,6 +132,7 @@ fn list_youtube_impl() -> Value {
 
 /// `knowledge:docs:list` —— 按 source_id 聚合 `document_knowledge_index`，返回文档源视图。
 fn docs_list_impl(db: &Db) -> anyhow::Result<Value> {
+    restore_document_allowlist(db);
     let rows = db.query_all_json(
         "SELECT source_id, COUNT(*) AS file_count, MAX(updated_at) AS updated_at, \
          MAX(title) AS title FROM document_knowledge_index \
@@ -145,6 +147,7 @@ fn docs_list_impl(db: &Db) -> anyhow::Result<Value> {
 ///
 /// payload 兼容两种形态：`{cursor,limit,kind,query}` 或 `{payload:{...}}`（对齐原 renderer）。
 fn list_page_impl(db: &Db, payload: &Value) -> anyhow::Result<Value> {
+    restore_document_allowlist(db);
     let inner = payload.get("payload").unwrap_or(payload);
 
     let query = inner
@@ -229,6 +232,24 @@ fn list_page_impl(db: &Db, payload: &Value) -> anyhow::Result<Value> {
         "total": total,
         "kindCounts": kind_counts,
     }))
+}
+
+pub fn restore_document_allowlist(db: &Db) {
+    let Ok(rows) = db.query_all_json(
+        "SELECT DISTINCT absolute_path FROM document_knowledge_index",
+        &[],
+    ) else {
+        return;
+    };
+    for path in rows
+        .iter()
+        .filter_map(|row| row.get("absolute_path").and_then(Value::as_str))
+        .map(std::path::PathBuf::from)
+    {
+        if is_supported_document_path(&path) {
+            let _ = allow_document_path(path);
+        }
+    }
 }
 
 /// `knowledge:get-item-detail` —— 按 kind 返回单条详情。
@@ -462,6 +483,9 @@ fn docs_add_files_impl(db: &Db, payload: &Value) -> anyhow::Result<Value> {
         if abs.is_empty() || (string_path.is_some() && !path.is_file()) {
             continue;
         }
+        if is_supported_document_path(&path) {
+            let _ = allow_document_path(&path);
+        }
         let source_id = f
             .get("sourceId")
             .or_else(|| f.get("source_id"))
@@ -585,6 +609,9 @@ async fn docs_add_folder_impl(db: &Db, payload: &Value) -> anyhow::Result<Value>
             if !file_type.is_file() {
                 continue;
             }
+            if is_supported_document_path(&path) {
+                let _ = allow_document_path(&path);
+            }
             let name = entry.file_name().to_string_lossy().to_string();
             let relative = path
                 .strip_prefix(&folder)
@@ -635,10 +662,28 @@ fn docs_delete_source_impl(db: &Db, payload: &Value) -> anyhow::Result<Value> {
     if !should_execute(payload) {
         return Ok(json!({ "success": true, "dryRun": true, "sourceId": source_id }));
     }
+    let paths = db.query_all_json(
+        "SELECT DISTINCT absolute_path FROM document_knowledge_index WHERE source_id = ?",
+        &[json!(source_id)],
+    )?;
     let removed = db.execute_json(
         "DELETE FROM document_knowledge_index WHERE source_id = ?",
         &[json!(source_id)],
     )?;
+    for path in paths
+        .iter()
+        .filter_map(|row| row.get("absolute_path").and_then(Value::as_str))
+    {
+        let still_registered = db
+            .query_one_json(
+                "SELECT 1 AS present FROM document_knowledge_index WHERE absolute_path = ? LIMIT 1",
+                &[json!(path)],
+            )?
+            .is_some();
+        if !still_registered {
+            let _ = revoke_document_path(path);
+        }
+    }
     Ok(json!({ "success": true, "sourceId": source_id, "removed": removed }))
 }
 
@@ -966,6 +1011,40 @@ mod tests {
         assert_eq!(rows[0]["relative_path"], json!("picker-note.md"));
         assert_eq!(rows[0]["title"], json!("picker-note.md"));
         assert!(rows[0]["file_size"].as_i64().unwrap() > 0);
+    }
+
+    #[test]
+    fn document_allowlist_restores_on_startup_and_revokes_on_source_delete() {
+        let db = Db::open_in_memory().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("managed-note.md");
+        std::fs::write(&file, "managed content").unwrap();
+        docs_add_files_impl(
+            &db,
+            &json!({
+                "confirm": true,
+                "files": [{
+                    "sourceId": "managed-source",
+                    "absolutePath": file.to_string_lossy(),
+                    "relativePath": "managed-note.md",
+                    "title": "managed-note.md"
+                }]
+            }),
+        )
+        .unwrap();
+        assert!(goose::document::ensure_document_path_allowed(&file).is_ok());
+
+        goose::document::revoke_document_path(&file).unwrap();
+        assert!(goose::document::ensure_document_path_allowed(&file).is_err());
+        restore_document_allowlist(&db);
+        assert!(goose::document::ensure_document_path_allowed(&file).is_ok());
+
+        docs_delete_source_impl(
+            &db,
+            &json!({ "confirm": true, "sourceId": "managed-source" }),
+        )
+        .unwrap();
+        assert!(goose::document::ensure_document_path_allowed(&file).is_err());
     }
 
     #[test]

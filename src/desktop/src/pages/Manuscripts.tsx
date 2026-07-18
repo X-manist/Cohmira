@@ -4051,12 +4051,13 @@ export function Manuscripts({ pendingFile, onFileConsumed, onNavigateToRedClaw, 
                                                                                 </div>
                                                                             </div>
                                                                         </>
-                                                                    ) : assetKind === 'html' || assetKind === 'pdf' ? (
+                                                                    ) : (assetKind === 'html' || assetKind === 'pdf') && asset.exists === true ? (
                                                                         <iframe
                                                                             src={previewSrc}
                                                                             title={asset.title || asset.id}
                                                                             loading="lazy"
-                                                                            sandbox={assetKind === 'html' ? 'allow-scripts allow-same-origin' : undefined}
+                                                                            sandbox={assetKind === 'html' ? 'allow-scripts' : undefined}
+                                                                            referrerPolicy="no-referrer"
                                                                             className="theme-content-light pointer-events-none h-full w-full border-0 bg-white"
                                                                         />
                                                                     ) : (
@@ -5079,11 +5080,12 @@ export function Manuscripts({ pendingFile, onFileConsumed, onNavigateToRedClaw, 
                                         className="mt-8 w-full"
                                     />
                                 </div>
-                            ) : inferAssetKind(previewAsset) === 'html' || inferAssetKind(previewAsset) === 'pdf' ? (
+                            ) : (inferAssetKind(previewAsset) === 'html' || inferAssetKind(previewAsset) === 'pdf') && previewAsset.exists === true ? (
                                 <iframe
                                     src={resolveAssetUrl(previewAsset.previewUrl || previewAsset.relativePath || previewAsset.absolutePath || '')}
                                     title={previewAsset.title || previewAsset.id}
-                                    sandbox={inferAssetKind(previewAsset) === 'html' ? 'allow-scripts allow-same-origin' : undefined}
+                                    sandbox={inferAssetKind(previewAsset) === 'html' ? 'allow-scripts' : undefined}
+                                    referrerPolicy="no-referrer"
                                     className="theme-content-light h-full w-full rounded-2xl border-0 bg-white"
                                 />
                             ) : (

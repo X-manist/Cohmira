@@ -100,6 +100,11 @@ export interface PendingChatMessage {
     processingStrategy?: string;
     deliveryMode?: 'direct-input' | 'tool-read';
     summary?: string;
+    extractedText?: string;
+    extractionFormat?: string;
+    extractionTruncated?: boolean;
+    extractionWarning?: string;
+    extractionError?: string;
     requiresMultimodal?: boolean;
   };
 }

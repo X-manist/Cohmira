@@ -45,6 +45,11 @@ export interface UploadedFileAttachment {
   processingStrategy?: string;
   deliveryMode?: 'direct-input' | 'tool-read';
   summary?: string;
+  extractedText?: string;
+  extractionFormat?: string;
+  extractionTruncated?: boolean;
+  extractionWarning?: string;
+  extractionError?: string;
   requiresMultimodal?: boolean;
 }
 
@@ -133,7 +138,7 @@ export interface ChatComposerProps {
 const IMAGE_ATTACHMENT_EXT_RE = /\.(png|jpe?g|webp|gif|bmp|svg|avif)(?:[?#].*)?$/i;
 const VIDEO_ATTACHMENT_EXT_RE = /\.(mp4|mov|webm|m4v|avi|mkv)(?:[?#].*)?$/i;
 const AUDIO_ATTACHMENT_EXT_RE = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)(?:[?#].*)?$/i;
-const TEXT_ATTACHMENT_EXT_RE = /\.(txt|md|markdown|json|csv|tsv|doc|docx|pdf|rtf|xml|yaml|yml|ts|tsx|js|jsx|py|rs|java|go|c|cpp|h|hpp)(?:[?#].*)?$/i;
+const TEXT_ATTACHMENT_EXT_RE = /\.(txt|md|markdown|json|csv|tsv|doc|docx|docm|ppt|pptx|pptm|pdf|rtf|xls|xlsx|xlsm|xlsb|ods|xml|yaml|yml|ts|tsx|js|jsx|py|rs|java|go|c|cpp|h|hpp)(?:[?#].*)?$/i;
 
 function modelSupportsChat(model: string | { id?: unknown; capability?: unknown; capabilities?: unknown }): boolean {
   if (typeof model === 'string') {
@@ -195,7 +200,7 @@ function getAttachmentVisualKind(attachment: UploadedFileAttachment): ComposerAt
   if (kind === 'image' || mimeType.startsWith('image/') || IMAGE_ATTACHMENT_EXT_RE.test(source)) return 'image';
   if (kind === 'video' || mimeType.startsWith('video/') || VIDEO_ATTACHMENT_EXT_RE.test(source)) return 'video';
   if (kind === 'audio' || mimeType.startsWith('audio/') || AUDIO_ATTACHMENT_EXT_RE.test(source)) return 'audio';
-  if (kind === 'text' || mimeType.startsWith('text/') || TEXT_ATTACHMENT_EXT_RE.test(source)) return 'text';
+  if (kind === 'text' || kind === 'document' || mimeType.startsWith('text/') || TEXT_ATTACHMENT_EXT_RE.test(source)) return 'text';
   return 'file';
 }
 

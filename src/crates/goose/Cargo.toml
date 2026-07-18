@@ -82,6 +82,9 @@ rmcp = { workspace = true, features = [
 oauth2 = { version = "5.0", default-features = false }
 arboard = { workspace = true }
 anyhow = { workspace = true }
+calamine = { workspace = true }
+pdf-extract = { workspace = true }
+quick-xml = { workspace = true }
 thiserror = { workspace = true }
 futures = { workspace = true }
 dirs = { workspace = true }

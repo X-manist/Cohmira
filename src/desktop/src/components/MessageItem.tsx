@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import { Components, UrlTransform } from 'react-markdown';
-import { Copy, Check, Edit, FolderOpen, Image, Send, X } from 'lucide-react';
+import { Copy, Check, Edit, FileText, FileWarning, FolderOpen, Image, Send, X } from 'lucide-react';
 import { ProcessTimeline, ProcessItem } from './ProcessTimeline';
 import { SkillActivatedBadge, ThinkingIndicator } from './ThinkingBubble';
 import { TodoList, PlanStep } from './TodoList';
@@ -55,6 +55,8 @@ const HTML_ATTACHMENT_EXT_RE = /\.html?(?:[?#].*)?$/i;
 const RENDERABLE_ARTIFACT_EXT_RE = /\.(png|jpe?g|webp|gif|bmp|svg|avif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|flac|ogg|opus|pdf|html?)(?:[?#].*)?$/i;
 const URL_ARTIFACT_SOURCE_RE = /(?:redbox-asset:\/\/[^\s<>"'`,)\]}]+|local-file:\/\/[^\s<>"'`,)\]}]+|file:\/\/[^\s<>"'`,)\]}]+|https?:\/\/[^\s<>"'`,)\]}]+)/gi;
 const ABSOLUTE_ARTIFACT_PATH_RE = /(\/(?:Volumes|Users|private|tmp|var)\/[^\s<>"'`,)\]}]+\.(?:png|jpe?g|webp|gif|bmp|svg|avif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|flac|ogg|opus|pdf|html?)(?:[?#][^\s<>"'`,)\]}]+)?)/gi;
+const WINDOWS_ABSOLUTE_ARTIFACT_PATH_RE = /([a-zA-Z]:[\\/][^\s<>"'`,)\]}]+\.(?:png|jpe?g|webp|gif|bmp|svg|avif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|flac|ogg|opus|pdf|html?)(?:[?#][^\s<>"'`,)\]}]+)?)/gi;
+const WINDOWS_UNC_ARTIFACT_PATH_RE = /(\\\\[^\\\s<>"'`,)\]}]+[\\/][^\s<>"'`,)\]}]+\.(?:png|jpe?g|webp|gif|bmp|svg|avif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|flac|ogg|opus|pdf|html?)(?:[?#][^\s<>"'`,)\]}]+)?)/gi;
 const MEDIA_LIBRARY_RELATIVE_SOURCE_RE = /^(?:(?:media[\\/])?generated|imported|projects|video-projects)[\\/]/i;
 const MEDIA_LIBRARY_RELATIVE_ARTIFACT_PATH_RE = /(^|[\s(（:："'`])((?:(?:media[\\/])?generated|imported|projects|video-projects)[\\/][^\n<>"'`,)\]}]+?\.(?:png|jpe?g|webp|gif|bmp|svg|avif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|flac|ogg|opus|pdf|html?)(?:[?#][^\s<>"'`,)\]}]+)?)/gim;
 
@@ -243,6 +245,16 @@ export const extractRenderableArtifactsFromText = (content: string): RenderableA
   }
   for (const match of text.matchAll(ABSOLUTE_ARTIFACT_PATH_RE)) {
     if (match[1]) {
+      const source = match[1];
+      const matchStart = match.index ?? 0;
+      const offset = match[0].indexOf(source);
+      const start = matchStart + Math.max(0, offset);
+      candidates.push({ source, start, end: start + source.length });
+    }
+  }
+  for (const pattern of [WINDOWS_ABSOLUTE_ARTIFACT_PATH_RE, WINDOWS_UNC_ARTIFACT_PATH_RE]) {
+    for (const match of text.matchAll(pattern)) {
+      if (!match[1]) continue;
       const source = match[1];
       const matchStart = match.index ?? 0;
       const offset = match[0].indexOf(source);
@@ -494,7 +506,24 @@ interface MediaAssetMatch {
   source: string;
 }
 
-const TEMPORARY_MEDIA_SOURCE_RE = /^(?:file:\/\/)?\/(?:private\/)?tmp\//i;
+const normalizeLocalPathForClassification = (value: string): string => {
+  let source = String(value || '').trim();
+  try {
+    source = decodeURIComponent(source);
+  } catch {
+    // Keep malformed URI text intact so it can still be classified safely.
+  }
+  return source
+    .replace(/^file:\/\/localhost\//i, '/')
+    .replace(/^file:\/\/\/?/i, '')
+    .replace(/\\/g, '/');
+};
+
+const isTemporaryMediaSource = (value: string): boolean => {
+  const source = normalizeLocalPathForClassification(value);
+  return /^\/?(?:private\/)?tmp\//i.test(source)
+    || /^[a-zA-Z]:\/(?:Users\/[^/]+\/AppData\/Local\/Temp|Windows\/Temp)\//i.test(source);
+};
 
 const findMediaAssetMatch = async (source: string, limit = 5000): Promise<MediaAssetMatch | null> => {
   const target = normalizeComparableArtifactSource(source);
@@ -509,7 +538,7 @@ const findMediaAssetMatch = async (source: string, limit = 5000): Promise<MediaA
     const assets = Array.isArray(result?.assets) ? result.assets : [];
     const matched = assets.find((asset) => {
       const id = String(asset.id || '').trim();
-      if (!id) return false;
+      if (!id || asset.exists !== true) return false;
       const rawSources = [
         asset.absolutePath,
         asset.previewUrl,
@@ -655,38 +684,114 @@ function CopyableBlockquote({ children }: { children: React.ReactNode }) {
   );
 }
 
+function UnresolvedArtifactCard({ source, label }: { source: string; label?: string }) {
+  const title = artifactDisplayLabel(label, source) || '产物文件';
+  return (
+    <div
+      data-testid="artifact-unresolved"
+      className="my-3 flex w-full max-w-full items-start gap-3 rounded-lg border border-border bg-surface-secondary/55 px-3 py-3"
+    >
+      <FileWarning className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium text-text-primary">{title}</div>
+        <div className="mt-1 break-all font-mono text-[11px] text-text-tertiary">{source}</div>
+        <div className="mt-1 text-xs text-text-tertiary">产物尚未登记到素材库，无法安全预览。</div>
+      </div>
+      <InlineCopyButton text={source} label="复制引用" />
+    </div>
+  );
+}
+
+const isVerifiedArtifactFrameUrl = (
+  source: string,
+  resolvedUrl: string,
+  kind: Extract<RenderableArtifactKind, 'pdf' | 'html'>,
+): boolean => {
+  const rawSource = String(source || '').trim();
+  const url = String(resolvedUrl || '').trim();
+  if (!rawSource || !url) return false;
+
+  if (/^blob:/i.test(url)) return true;
+  if (kind === 'html' && /^data:text\/html(?:[;,]|$)/i.test(url)) return true;
+  if (kind === 'pdf' && /^data:application\/pdf(?:[;,]|$)/i.test(url)) return true;
+
+  if (/^https?:/i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      if (typeof window !== 'undefined') {
+        const current = window.location;
+        if (parsed.protocol === current.protocol && parsed.host === current.host) {
+          return false;
+        }
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  if (!isLocalAssetUrl(rawSource)) return false;
+  return /^(?:asset:|redbox-asset:|local-file:|file:)/i.test(url);
+};
+
+type ManagedArtifactResolution =
+  | { status: 'loading' }
+  | { status: 'resolved'; source: string }
+  | { status: 'unresolved' };
+
+const requiresManagedArtifactResolution = (source: string): boolean => {
+  const kind = getRenderableArtifactKind(source);
+  return isTemporaryMediaSource(source)
+    || MEDIA_LIBRARY_RELATIVE_SOURCE_RE.test(source)
+    || ((kind === 'html' || kind === 'pdf') && isLocalAssetUrl(source));
+};
+
 function ManagedArtifactSource({
   source,
+  label,
   children,
 }: {
   source: string;
+  label?: string;
   children: (resolvedSource: string, retry: () => void) => React.ReactNode;
 }) {
-  const requiresMediaLibraryResolution = TEMPORARY_MEDIA_SOURCE_RE.test(source)
-    || MEDIA_LIBRARY_RELATIVE_SOURCE_RE.test(source);
-  const [resolvedSource, setResolvedSource] = useState(requiresMediaLibraryResolution ? '' : source);
+  const requiresMediaLibraryResolution = requiresManagedArtifactResolution(source);
+  const requestSequence = useRef(0);
+  const [resolution, setResolution] = useState<ManagedArtifactResolution>(() => (
+    requiresMediaLibraryResolution
+      ? { status: 'loading' }
+      : { status: 'resolved', source }
+  ));
 
   const resolveFromMediaLibrary = useCallback(async () => {
-    if (!TEMPORARY_MEDIA_SOURCE_RE.test(source) && !MEDIA_LIBRARY_RELATIVE_SOURCE_RE.test(source)) {
-      setResolvedSource(source);
+    const requestId = ++requestSequence.current;
+    if (!requiresMediaLibraryResolution) {
+      setResolution({ status: 'resolved', source });
       return;
     }
+    setResolution({ status: 'loading' });
     const matched = await findMediaAssetMatch(source, 1000);
-    setResolvedSource(matched?.source || source);
-  }, [source]);
+    if (requestId !== requestSequence.current) return;
+    setResolution(matched?.source
+      ? { status: 'resolved', source: matched.source }
+      : { status: 'unresolved' });
+  }, [requiresMediaLibraryResolution, source]);
 
   useEffect(() => {
-    const shouldResolve = TEMPORARY_MEDIA_SOURCE_RE.test(source)
-      || MEDIA_LIBRARY_RELATIVE_SOURCE_RE.test(source);
-    setResolvedSource(shouldResolve ? '' : source);
     void resolveFromMediaLibrary();
-  }, [source, resolveFromMediaLibrary]);
+    return () => {
+      requestSequence.current += 1;
+    };
+  }, [resolveFromMediaLibrary]);
 
-  if (!resolvedSource) {
+  if (resolution.status === 'loading') {
     return <div className="my-3 h-32 w-full max-w-full animate-pulse rounded-xl border border-border bg-surface-secondary/60" />;
   }
+  if (resolution.status === 'unresolved') {
+    return <UnresolvedArtifactCard source={source} label={label} />;
+  }
 
-  return <>{children(resolvedSource, () => void resolveFromMediaLibrary())}</>;
+  return <>{children(resolution.source, () => void resolveFromMediaLibrary())}</>;
 }
 
 // Legacy types for compatibility (will be migrated)
@@ -722,6 +827,11 @@ export interface UploadedFileMessageAttachment {
   processingStrategy?: string;
   deliveryMode?: 'direct-input' | 'tool-read';
   summary?: string;
+  extractedText?: string;
+  extractionFormat?: string;
+  extractionTruncated?: boolean;
+  extractionWarning?: string;
+  extractionError?: string;
   requiresMultimodal?: boolean;
 }
 
@@ -1145,6 +1255,9 @@ export const MessageItem = memo(({
       const kind = getRenderableArtifactKind(managedSource || mediaUrl);
       if (!mediaUrl || !kind) return null;
       const title = artifactDisplayLabel(label, managedSource) || '生成产物';
+      if ((kind === 'pdf' || kind === 'html') && !isVerifiedArtifactFrameUrl(managedSource, mediaUrl, kind)) {
+        return <UnresolvedArtifactCard source={managedSource} label={title} />;
+      }
       const frameClass = 'group relative my-3 block w-full max-w-full overflow-hidden rounded-xl border border-border bg-surface-secondary shadow-sm';
       const actionSource = managedSource || mediaUrl;
       const copyTitle = kind === 'image' ? '复制图片' : '复制产物引用';
@@ -1236,7 +1349,8 @@ export const MessageItem = memo(({
               src={mediaUrl}
               title={title}
               className="block h-[30rem] w-full bg-white"
-              sandbox={kind === 'html' ? 'allow-scripts allow-same-origin' : undefined}
+              sandbox={kind === 'html' ? 'allow-scripts' : undefined}
+              referrerPolicy="no-referrer"
             />
           </div>
         );
@@ -1246,7 +1360,7 @@ export const MessageItem = memo(({
     };
 
     return (
-      <ManagedArtifactSource source={rawSource}>
+      <ManagedArtifactSource source={rawSource} label={label}>
         {renderResolvedArtifact}
       </ManagedArtifactSource>
     );
@@ -1426,8 +1540,8 @@ export const MessageItem = memo(({
     return (
       <div className="mt-2 w-full max-w-[520px] rounded-xl border border-border bg-surface-primary/90 p-3">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-lg bg-surface-secondary border border-border flex items-center justify-center text-sm">
-            📎
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface-secondary text-text-secondary">
+            <FileText className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xs text-text-tertiary">上传文件</div>
@@ -1440,10 +1554,22 @@ export const MessageItem = memo(({
               {attachment.ext && <span>.{String(attachment.ext).replace(/^\./, '')}</span>}
               {attachment.storageMode === 'staged' && <span>已暂存</span>}
               {attachment.directUploadEligible && <span>可直传</span>}
+              {attachment.extractionFormat && <span>Rust 已解析</span>}
+              {attachment.extractionTruncated && <span>正文已截断</span>}
             </div>
             {attachment.summary && (
               <div className="mt-1.5 line-clamp-2 text-xs text-text-secondary">
                 {attachment.summary}
+              </div>
+            )}
+            {attachment.extractionWarning && (
+              <div className="mt-1.5 text-xs text-amber-600 dark:text-amber-300">
+                {attachment.extractionWarning}
+              </div>
+            )}
+            {attachment.extractionError && (
+              <div className="mt-1.5 text-xs text-red-600 dark:text-red-300">
+                文档解析失败：{attachment.extractionError}
               </div>
             )}
           </div>

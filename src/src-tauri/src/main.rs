@@ -29,6 +29,27 @@ impl EventEmitter for TauriEmitter {
     }
 }
 
+fn allow_workspace_preview_directories(
+    app: &tauri::AppHandle,
+    settings: &serde_json::Value,
+) -> anyhow::Result<Vec<PathBuf>> {
+    let paths = yunying_server::workspace::resolve(settings);
+    let preview_directories = [
+        paths.media,
+        paths.cover,
+        paths.manuscripts,
+    ];
+    let mut allowed = Vec::with_capacity(preview_directories.len());
+    for directory in preview_directories {
+        std::fs::create_dir_all(&directory)?;
+        let canonical = directory.canonicalize()?;
+        app.asset_protocol_scope()
+            .allow_directory(&canonical, true)?;
+        allowed.push(canonical);
+    }
+    Ok(allowed)
+}
+
 /// `invoke('ipc_invoke', { channel, payload })` → 路由到 [`yunying_server::ipc::dispatch_invoke`]。
 #[tauri::command]
 async fn ipc_invoke(
@@ -479,7 +500,17 @@ fn main() {
                 Ok(_) => {}
                 Err(error) => eprintln!("[警告] 迁移旧桌面设置失败：{error}"),
             }
+            yunying_server::ipc::knowledge::restore_document_allowlist(&db);
             if let Ok(settings) = db.settings().get() {
+                match allow_workspace_preview_directories(app.handle(), &settings) {
+                    Ok(directories) => eprintln!(
+                        "[启动] 已授权 {} 个工作区预览目录；知识与文档目录保持隔离",
+                        directories.len()
+                    ),
+                    Err(error) => {
+                        eprintln!("[警告] 无法授权工作区资源预览目录：{error}");
+                    }
+                }
                 configure_social_runtime_environment(
                     &settings,
                     &data_dir,

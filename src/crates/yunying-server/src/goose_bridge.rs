@@ -59,7 +59,7 @@ impl Default for GooseBridge {
             chat_sessions: Arc::new(Mutex::new(HashMap::new())),
             chat_cancel_tokens: Arc::new(Mutex::new(HashMap::new())),
             provider: Arc::new(RwLock::new(None)),
-            extension_configs: Arc::new(Mutex::new(Vec::new())),
+            extension_configs: Arc::new(Mutex::new(vec![document_extension_config()])),
         }
     }
 }
@@ -84,6 +84,16 @@ fn desktop_agent() -> Agent {
         false,
         GoosePlatform::GooseDesktop,
     ))
+}
+
+fn document_extension_config() -> ExtensionConfig {
+    ExtensionConfig::Platform {
+        name: "office".to_string(),
+        description: "Read common local documents with bundled, read-only Rust parsers".to_string(),
+        display_name: Some("Document Reader".to_string()),
+        bundled: Some(true),
+        available_tools: vec!["document_read".to_string()],
+    }
 }
 
 fn restricted_background_agent(permission_manager: Arc<PermissionManager>) -> Agent {
@@ -149,6 +159,10 @@ impl GooseBridge {
         agent
             .update_provider(Arc::clone(&provider), &session.id)
             .await?;
+        let document_extension = document_extension_config();
+        agent
+            .add_extension(document_extension.clone(), &session.id)
+            .await?;
 
         Ok(Self {
             agent,
@@ -158,7 +172,7 @@ impl GooseBridge {
             chat_sessions: Arc::new(Mutex::new(HashMap::new())),
             chat_cancel_tokens: Arc::new(Mutex::new(HashMap::new())),
             provider: Arc::new(RwLock::new(Some(provider))),
-            extension_configs: Arc::new(Mutex::new(Vec::new())),
+            extension_configs: Arc::new(Mutex::new(vec![document_extension])),
         })
     }
 
@@ -931,6 +945,62 @@ fn scheduled_tool_name_matches(actual: &str, allowed: &str) -> bool {
 #[cfg(test)]
 mod session_isolation_tests {
     use super::*;
+
+    #[test]
+    fn desktop_document_extension_exposes_only_the_read_tool() {
+        match document_extension_config() {
+            ExtensionConfig::Platform {
+                name,
+                available_tools,
+                ..
+            } => {
+                assert_eq!(name, "office");
+                assert_eq!(available_tools, vec!["document_read"]);
+            }
+            other => panic!("unexpected document extension config: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn new_employee_chat_session_mounts_only_document_read_from_office() {
+        let bridge = GooseBridge::default();
+        let runtime = bridge
+            .ensure_chat_session("document-tool-contract")
+            .await
+            .unwrap();
+        let tool_names = runtime
+            .agent
+            .list_tools(&runtime.goose_session_id, None)
+            .await
+            .into_iter()
+            .map(|tool| tool.name.to_string())
+            .collect::<Vec<_>>();
+
+        assert!(tool_names.iter().any(|name| name == "document_read"));
+        assert!(!tool_names.iter().any(|name| name == "ppt_create"));
+        assert!(!tool_names.iter().any(|name| name == "developer__shell"));
+
+        let spreadsheet = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../goose-mcp/src/computercontroller/tests/data/FinancialSample.xlsx");
+        goose::document::allow_document_path(&spreadsheet).unwrap();
+        let request = CallToolRequestParams::new("document_read".to_string()).with_arguments(
+            serde_json::Map::from_iter([(
+                "path".to_string(),
+                serde_json::json!(spreadsheet.to_string_lossy()),
+            )]),
+        );
+        let context = ToolCallContext::new(runtime.goose_session_id.clone(), None, None);
+        let dispatched = runtime
+            .agent
+            .extension_manager
+            .dispatch_tool_call(&context, request, CancellationToken::new())
+            .await
+            .unwrap();
+        let result = dispatched.result.await.unwrap();
+        let serialized = serde_json::to_string(&result).unwrap();
+        assert!(serialized.contains("Government"));
+        assert!(serialized.contains("spreadsheet"));
+    }
 
     #[tokio::test]
     async fn different_frontend_sessions_can_be_active_and_cancelled_independently() {

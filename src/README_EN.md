@@ -17,6 +17,7 @@
 | Operations hub | Goose-based Agent sessions, tool calls, task decomposition, execution progress, and result delivery |
 | Task queue | Review active, pending, and completed operations tasks and retain results for later analysis |
 | Knowledge and materials | Manage knowledge, web/comment/text materials, images, videos, audio, and local files |
+| Local documents | Read-only Rust parsing for PDF, DOCX/DOCM, PPTX/PPTM, and XLSX/XLSM without Python, Office, LibreOffice, or Poppler |
 | Content production | Manuscripts, image-post and video scripts, covers, image/video generation, and timeline-based video editing |
 | Team results | Aggregate employee or Agent task output, media artifacts, and historical results |
 | Social accounts | Account pool, QR code/browser login, cookie persistence, status validation, and account switching |
@@ -32,6 +33,12 @@
 - Image-post publishing currently focuses on Xiaohongshu, Douyin, and Kuaishou; confirm the actual adapter status before using other platforms.
 - The collection layer contains platform code for Xiaohongshu, Douyin, Bilibili, Kuaishou, Weibo, Baidu Tieba, and Zhihu. Completion and authentication requirements vary, so the presence of an adapter does not mean it has passed production acceptance.
 - Login, anti-abuse, and publishing pages change over time. Re-run account-login and small-scope publishing tests before upgrades or production use.
+
+### Document Reading Scope
+
+- Chat attachments are locally parsed for text, table cells, slides, and speaker notes. Knowledge-base documents can be parsed on demand by the same read-only tool. The Agent receives only authorized paths and bounded extracted text.
+- The parser does not execute macros, embedded objects, or external links. Each source file is limited to 100 MB, with additional OOXML expansion and compression-ratio limits.
+- Scanned PDFs without embedded text require separate OCR. Legacy `.doc` and `.ppt` files must first be saved as `.docx` or `.pptx`; `.xls`, `.xlsb`, and `.ods` files must be saved as `.xlsx`. This feature provides semantic reading, not pixel-perfect Microsoft Office rendering.
 
 ## Technical Architecture
 
@@ -115,6 +122,8 @@ At minimum, review:
 - Keep `safety.run_real_crawler`, `run_real_publish`, `run_real_image`, and `run_real_video` set to `false` until the corresponding test flow has passed.
 
 Do not commit real API keys, cookies, account files, or production configuration.
+
+Tauri adds only workspace `media`, `cover`, and `manuscripts` directories to its read-only preview scope. `knowledge`, `redclaw/uploads`, and other knowledge or staged-document directories are not exposed to the WebView. Spaces under the default `~/.redconvert` root can switch directly; restart after changing `workspace_dir` or switching spaces in a custom workspace so permissions do not accumulate across old directories.
 
 ### Connect to the Boss Client
 
